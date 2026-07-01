@@ -16,7 +16,15 @@ async function request<T>(
     ...options,
   });
   if (!res.ok) {
-    throw new ApiError(res.status, `Request failed: ${res.status}`);
+    // Surface a server-provided { error } message when present.
+    let message = `Request failed: ${res.status}`;
+    try {
+      const body = await res.clone().json();
+      if (body && typeof body.error === "string") message = body.error;
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new ApiError(res.status, message);
   }
   const ct = res.headers.get("content-type") ?? "";
   if (ct.includes("application/json")) return (await res.json()) as T;

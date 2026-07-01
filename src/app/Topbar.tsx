@@ -52,9 +52,11 @@ export function Topbar() {
   const [entityOpen, setEntityOpen] = React.useState(false);
   const portal = activePortal ? PORTALS[activePortal] : null;
 
-  // default entity once loaded
+  // Restore the last-selected entity on load, else default to the first.
   React.useEffect(() => {
-    if (!entity && entities?.length) setEntity(entities[0]);
+    if (entity || !entities?.length) return;
+    const savedId = localStorage.getItem("msts-entity");
+    setEntity(entities.find((e) => e.id === savedId) ?? entities[0]);
   }, [entities, entity, setEntity]);
 
   const unread = notifications?.filter((n) => !n.read).length ?? 0;
@@ -139,6 +141,7 @@ export function Topbar() {
               key={e.id}
               onClick={() => {
                 setEntity(e);
+                localStorage.setItem("msts-entity", e.id);
                 setEntityOpen(false);
               }}
               className="flex w-full items-start gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors hover:bg-secondary"
@@ -249,15 +252,15 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <button className="ml-1 flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <Avatar>
-                <AvatarFallback>{initials(user?.name ?? "Aman MSTS")}</AvatarFallback>
+                <AvatarFallback>{initials(user?.name ?? "Lars Jansen")}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="normal-case">
-              <p className="text-sm font-semibold text-foreground">{user?.name ?? "Aman MSTS"}</p>
+              <p className="text-sm font-semibold text-foreground">{user?.name ?? "Lars Jansen"}</p>
               <p className="text-xs font-normal text-muted-foreground">
-                {user?.email ?? "aman@nvd-transport.nl"}
+                {user?.email ?? "lars@nvd-transport.nl"}
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

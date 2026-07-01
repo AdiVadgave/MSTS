@@ -12,7 +12,10 @@ const LEN = 6;
 export default function MfaPage() {
   const navigate = useNavigate();
   const { user, mfaVerified, verifyMfa } = useAppStore();
-  const [digits, setDigits] = React.useState<string[]>(Array(LEN).fill(""));
+  // Pre-filled with the demo code so the prototype flow is one click.
+  const [digits, setDigits] = React.useState<string[]>(
+    Array.from({ length: LEN }, (_, i) => DEMO.mfaCode[i] ?? "")
+  );
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const refs = React.useRef<Array<HTMLInputElement | null>>([]);
@@ -115,13 +118,6 @@ export default function MfaPage() {
           Resend code
         </button>
       </form>
-
-      <div className="mt-5 flex items-start gap-2 rounded-lg border border-shell-asphalt-line bg-shell-asphalt p-3 text-xs text-[#b7ae9f]">
-        <Info className="mt-0.5 size-3.5 shrink-0 text-shell-yellow" />
-        <span>
-          Demo code — enter <span className="font-mono text-shell-paper">{DEMO.mfaCode}</span>.
-        </span>
-      </div>
     </AuthShell>
   );
 }

@@ -23,9 +23,27 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useInvoices, useInvoiceAction, useSpendByCountry } from "@/hooks/api";
 import { COUNTRIES } from "@/mocks/catalog";
+import { downloadDocumentPDF } from "@/lib/download";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Invoice } from "@/lib/types";
 import { toast } from "sonner";
+
+function invoicePDF(i: Invoice) {
+  downloadDocumentPDF(`${i.number}.pdf`, {
+    title: `Invoice ${i.number}`,
+    meta: [
+      ["Period", i.period],
+      ["Issued", formatDate(i.issuedAt)],
+      ["Due", formatDate(i.dueAt)],
+      ["Status", i.status],
+    ],
+    lineItems: [
+      { label: "Net toll charges", value: formatCurrency(i.amount - i.vatAmount) },
+      { label: "VAT (21%)", value: formatCurrency(i.vatAmount) },
+    ],
+    total: { label: "Total due", value: formatCurrency(i.amount) },
+  });
+}
 
 function ConsolidatedInvoice({
   byCountry,
@@ -121,7 +139,12 @@ export default function FinancePage() {
             <Button variant="ghost" size="icon-sm"><MoreHorizontal className="size-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => toast.success(`Downloading ${i.number}.pdf`)}>
+            <DropdownMenuItem
+              onClick={() => {
+                invoicePDF(i);
+                toast.success(`${i.number}.pdf downloaded`);
+              }}
+            >
               <Download /> Download PDF
             </DropdownMenuItem>
             {i.status !== "paid" && (
@@ -153,7 +176,24 @@ export default function FinancePage() {
         actions={
           <Button
             variant="outline"
-            onClick={() => toast.success("Account statement downloaded", { description: "statement-FLEET-4471.pdf" })}
+            onClick={() => {
+              const rows = byCountry ?? [];
+              const total = rows.reduce((s, r) => s + r.spend, 0);
+              downloadDocumentPDF("statement-FLEET-4471.pdf", {
+                title: "Account statement",
+                meta: [
+                  ["Account", "FLEET-4471"],
+                  ["Period", "March 2026"],
+                  ["Generated", formatDate(new Date())],
+                ],
+                lineItems: rows.map((r) => ({
+                  label: COUNTRIES.find((c) => c.code === r.country)?.name ?? r.country,
+                  value: formatCurrency(r.spend),
+                })),
+                total: { label: "Total", value: formatCurrency(total) },
+              });
+              toast.success("Account statement downloaded", { description: "statement-FLEET-4471.pdf" });
+            }}
           >
             <Download /> Statement
           </Button>

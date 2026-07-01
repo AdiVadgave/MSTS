@@ -23,7 +23,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useReports, useRunReport } from "@/hooks/api";
+import { useReports, useRunReportData } from "@/hooks/api";
+import { downloadCSV, downloadTablePDF, downloadXLS, downloadJSON } from "@/lib/download";
 import type { ReportDef } from "@/lib/types";
 import { toast } from "sonner";
 
@@ -37,7 +38,7 @@ const CAT_ICON: Record<string, typeof FileText> = {
 
 export default function ReportsPage() {
   const { data: reports, isLoading } = useReports();
-  const run = useRunReport();
+  const run = useRunReportData();
   const [cat, setCat] = React.useState("all");
   const [runningId, setRunningId] = React.useState<string | null>(null);
 
@@ -48,9 +49,18 @@ export default function ReportsPage() {
     setRunningId(r.id + format);
     try {
       const res = await run.mutateAsync({ id: r.id, format });
-      toast.success(`${r.name} ready`, {
-        description: `${res.fileName} · ${res.rows.toLocaleString()} rows`,
+      const base = res.fileName.replace(/\.[^.]+$/, "");
+      // Produce a real file from the returned rows.
+      if (format === "CSV") downloadCSV(`${base}.csv`, res.columns, res.rows);
+      else if (format === "XLSX") downloadXLS(`${base}.xls`, res.columns, res.rows);
+      else if (format === "PDF")
+        downloadTablePDF(`${base}.pdf`, r.name, res.columns, res.rows, r.description);
+      else downloadJSON(`${base}.json`, res.rows);
+      toast.success(`${r.name} exported`, {
+        description: `${res.fileName} · ${res.count.toLocaleString()} rows downloaded`,
       });
+    } catch {
+      toast.error("Export failed. Please try again.");
     } finally {
       setRunningId(null);
     }

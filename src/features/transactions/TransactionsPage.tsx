@@ -10,11 +10,14 @@ import { SourceTag } from "@/components/common/SourceTag";
 import { StatCard } from "@/components/common/StatCard";
 import { Plate } from "@/components/common/Plate";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { useTransactions } from "@/hooks/api";
 import { useDebounced } from "@/hooks/useDebounced";
+import { api, buildQuery } from "@/lib/api";
+import { downloadCSV } from "@/lib/download";
 import { COUNTRIES } from "@/mocks/catalog";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { Transaction } from "@/lib/types";
+import type { Paginated, Transaction } from "@/lib/types";
 import { toast } from "sonner";
 
 export default function TransactionsPage() {
@@ -26,6 +29,8 @@ export default function TransactionsPage() {
   const [page, setPage] = React.useState(1);
   const [sort, setSort] = React.useState("-date");
 
+  const [exporting, setExporting] = React.useState(false);
+
   const { data, isLoading } = useTransactions({
     q: debouncedQ,
     status,
@@ -34,6 +39,35 @@ export default function TransactionsPage() {
     pageSize: 12,
     sort,
   });
+
+  // Export ALL rows matching the current filters (not just this page).
+  const exportCsv = async () => {
+    setExporting(true);
+    try {
+      const all = await api.get<Paginated<Transaction>>(
+        `/api/transactions${buildQuery({ q: debouncedQ, status, country, sort, page: 1, pageSize: 5000 })}`
+      );
+      downloadCSV(
+        `transactions-${new Date().toISOString().slice(0, 10)}.csv`,
+        ["Date", "Vehicle", "Country", "Domain", "Location", "OBU", "Amount (EUR)", "Status"],
+        all.rows.map((t) => ({
+          Date: formatDate(t.date, true),
+          Vehicle: t.vehiclePlate,
+          Country: t.country,
+          Domain: t.domain,
+          Location: t.location,
+          OBU: t.obuSerial ?? "",
+          "Amount (EUR)": t.amount,
+          Status: t.status,
+        }))
+      );
+      toast.success(`Exported ${all.total.toLocaleString()} transactions`);
+    } catch {
+      toast.error("Export failed. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const columns: Column<Transaction>[] = [
     { key: "date", header: "Date", sortable: true, cell: (t) => <span className="text-muted-foreground">{formatDate(t.date, true)}</span> },
@@ -53,8 +87,8 @@ export default function TransactionsPage() {
         description="Search, verify and reconcile toll passages. Investigate exceptions before billing."
         badge={<SourceTag source="MyMST" />}
         actions={
-          <Button variant="outline" onClick={() => toast.success("Export queued — check Reports")}>
-            <Download /> Export
+          <Button variant="outline" onClick={exportCsv} disabled={exporting}>
+            {exporting ? <Loader2 className="animate-spin" /> : <Download />} Export
           </Button>
         }
       />

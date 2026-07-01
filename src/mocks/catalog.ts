@@ -15,12 +15,20 @@ export const COUNTRIES: { code: Country; name: string }[] = [
 ];
 
 // Real MSTS tolling product catalogue (from MyTolls product helper).
+// Eligibility rules (assumed):
+//  · Heavy-goods tolls (vignettes, HGV levies, most national OBUs, route passes,
+//    rebates) apply to Trucks (and trailers where a vignette rides the unit).
+//  · "All-classes" schemes (Telepass, tunnel passes, T-Tag) also serve Bus/Van.
+//  · The multi-service MST Card is available to every vehicle type.
+//  A product is only orderable when the vehicle's COUNTRY is in `countries`
+//  AND its TYPE is in `eligibleTypes` (see lib/eligibility.ts).
 export const PRODUCTS: TollProduct[] = [
   {
     code: "MST_CARD",
     name: "MST Card",
     category: "Card",
     countries: ["NL", "DE", "BE", "FR"],
+    eligibleTypes: ["Truck", "Trailer", "Bus", "Van"],
     description: "Multi-service fuel & toll card accepted across the network.",
     deposit: 0,
     monthlyFee: 4.5,
@@ -31,6 +39,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "Eurovignette",
     category: "Vignette",
     countries: ["NL", "DE", "BE"],
+    eligibleTypes: ["Truck", "Trailer"],
     description: "Time-based road user charge for heavy goods vehicles.",
     deposit: 0,
     monthlyFee: 0,
@@ -41,6 +50,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "HGV Levy",
     category: "Vignette",
     countries: ["DE"],
+    eligibleTypes: ["Truck"],
     description: "Heavy Goods Vehicle levy for qualifying roads.",
     deposit: 0,
     monthlyFee: 0,
@@ -51,6 +61,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "Satellic OBU",
     category: "OBU",
     countries: ["BE"],
+    eligibleTypes: ["Truck"],
     description: "On-board unit for the Belgian Viapass toll network.",
     deposit: 135,
     monthlyFee: 0,
@@ -61,6 +72,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "Go-Box",
     category: "OBU",
     countries: ["AT"],
+    eligibleTypes: ["Truck"],
     description: "Austrian GO-Maut on-board unit for motorways.",
     deposit: 5,
     monthlyFee: 0,
@@ -71,6 +83,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "Telepass",
     category: "OBU",
     countries: ["IT"],
+    eligibleTypes: ["Truck", "Bus", "Van"],
     description: "Italian electronic toll collection device.",
     deposit: 10,
     monthlyFee: 1.7,
@@ -81,6 +94,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "MYTO CZ OBU",
     category: "OBU",
     countries: ["CZ"],
+    eligibleTypes: ["Truck"],
     description: "Czech electronic toll on-board unit.",
     deposit: 0,
     monthlyFee: 0,
@@ -91,6 +105,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "HU-GO OBU",
     category: "OBU",
     countries: ["HU"],
+    eligibleTypes: ["Truck"],
     description: "Hungarian distance-based e-toll device.",
     deposit: 0,
     monthlyFee: 0,
@@ -101,6 +116,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "Fréjus",
     category: "RoutePass",
     countries: ["FR", "IT"],
+    eligibleTypes: ["Truck", "Bus", "Van"],
     description: "Fréjus tunnel crossing subscription.",
     deposit: 0,
     monthlyFee: 0,
@@ -111,6 +127,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "T-Tag",
     category: "OBU",
     countries: ["FR", "ES"],
+    eligibleTypes: ["Truck", "Bus", "Van"],
     description: "Interoperable tag for French & Spanish motorways.",
     deposit: 20,
     monthlyFee: 2,
@@ -121,6 +138,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "Blankenburg",
     category: "RoutePass",
     countries: ["NL"],
+    eligibleTypes: ["Truck", "Bus", "Van"],
     description: "Blankenburg connection tunnel pass.",
     deposit: 0,
     monthlyFee: 0,
@@ -131,6 +149,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "Bulgarian Route Pass",
     category: "RoutePass",
     countries: ["BG"],
+    eligibleTypes: ["Truck"],
     description: "Route-based pass for the Bulgarian toll network.",
     deposit: 0,
     monthlyFee: 0,
@@ -141,6 +160,7 @@ export const PRODUCTS: TollProduct[] = [
     name: "Italian Rebate",
     category: "Rebate",
     countries: ["IT"],
+    eligibleTypes: ["Truck", "Trailer"],
     description: "Toll rebate scheme for eligible Italian mileage.",
     deposit: 0,
     monthlyFee: 0,

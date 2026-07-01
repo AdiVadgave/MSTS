@@ -13,7 +13,10 @@ import type {
   OBU,
   Order,
   Paginated,
+  Profile,
   ReportDef,
+  Settings,
+  SupportTicket,
   TollDomain,
   TollProduct,
   Transaction,
@@ -186,6 +189,9 @@ export function useCreateOrder() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["orders"] });
       qc.invalidateQueries({ queryKey: ["activity"] });
+      qc.invalidateQueries({ queryKey: ["vehicles"] });
+      qc.invalidateQueries({ queryKey: ["vehicle"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
   });
 }
@@ -284,5 +290,90 @@ export function useValidateVat() {
         "/api/onboarding/validate-vat",
         { vat }
       ),
+  });
+}
+
+export function useSubmitOnboarding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { company: string; vat: string; country: string }) =>
+      api.post<{ ok: boolean; entityId: string; entity: Entity }>(
+        "/api/onboarding/submit",
+        body
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["entities"] });
+      qc.invalidateQueries({ queryKey: ["activity"] });
+    },
+  });
+}
+
+// ── Reports data export ────────────────────────────────────────
+export interface ReportRun {
+  fileName: string;
+  count: number;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  format: string;
+  generatedAt: string;
+}
+export function useRunReportData() {
+  return useMutation({
+    mutationFn: ({ id, format }: { id: string; format: string }) =>
+      api.post<ReportRun>(`/api/reports/${id}/run`, { format }),
+  });
+}
+
+// ── Entity / Profile / Settings (Account) ──────────────────────
+export function useUpdateEntity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: Partial<Entity> & { id: string }) =>
+      api.patch<Entity>(`/api/entities/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["entities"] }),
+  });
+}
+
+export const useProfile = () =>
+  useQuery({ queryKey: ["profile"], queryFn: () => api.get<Profile>("/api/profile") });
+
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<Profile>) => api.patch<Profile>("/api/profile", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["profile"] }),
+  });
+}
+
+export const useSettings = () =>
+  useQuery({ queryKey: ["settings"], queryFn: () => api.get<Settings>("/api/settings") });
+
+export function useUpdateSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<Settings>) => api.patch<Settings>("/api/settings", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }),
+  });
+}
+
+// ── Support tickets ────────────────────────────────────────────
+export const useTickets = () =>
+  useQuery({ queryKey: ["tickets"], queryFn: () => api.get<SupportTicket[]>("/api/tickets") });
+
+export function useCreateTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { subject: string; product: string; message: string }) =>
+      api.post<SupportTicket>("/api/tickets", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tickets"] }),
+  });
+}
+
+// ── System: reset demo data ────────────────────────────────────
+export function useResetDemoData() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post("/api/system/reset", {}),
+    onSuccess: () => qc.invalidateQueries(),
   });
 }

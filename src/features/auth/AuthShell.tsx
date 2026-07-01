@@ -41,6 +41,6 @@ export function AuthShell({
 export const DEMO = {
   email: "demo@mstsone.eu",
   password: "msts1234",
-  name: "Aman MSTS",
+  name: "Lars Jansen",
   mfaCode: "123456",
 };

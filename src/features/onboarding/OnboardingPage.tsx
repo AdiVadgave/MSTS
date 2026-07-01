@@ -20,8 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Field } from "@/components/common/Field";
-import { useValidateVat } from "@/hooks/api";
-import { api } from "@/lib/api";
+import { useValidateVat, useSubmitOnboarding } from "@/hooks/api";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -39,6 +38,7 @@ export default function OnboardingPage() {
   const [done, setDone] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const validateVat = useValidateVat();
+  const submitOnboarding = useSubmitOnboarding();
   const [vatResult, setVatResult] = React.useState<{ valid: boolean; company: string | null; address: string | null } | null>(null);
 
   const [form, setForm] = React.useState({
@@ -67,8 +67,14 @@ export default function OnboardingPage() {
   const submit = async () => {
     setSubmitting(true);
     try {
-      await api.post("/api/onboarding/submit", form);
+      await submitOnboarding.mutateAsync({
+        company: form.company,
+        vat: form.vat,
+        country: form.country,
+      });
       setDone(true);
+    } catch {
+      toast.error("Onboarding failed. Please try again.");
     } finally {
       setSubmitting(false);
     }

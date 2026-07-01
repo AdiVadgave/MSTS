@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Loader2, ShoppingCart, Ban } from "lucide-react";
+import { Loader2, ShoppingCart, Ban, Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Field } from "@/components/common/Field";
 import { useCreateOrder, useVehicles } from "@/hooks/api";
+import { productStatus } from "@/lib/eligibility";
 import { formatCurrency } from "@/lib/utils";
 import type { TollProduct } from "@/lib/types";
 import { toast } from "sonner";
@@ -35,25 +36,38 @@ export function OrderDialog({ product, mode, onOpenChange }: Props) {
   const [vehiclePlate, setVehiclePlate] = React.useState("");
   const [qty, setQty] = React.useState(1);
 
+  const rows = vehicles?.rows ?? [];
+
+  // When the product/vehicle list changes, default to the first vehicle that
+  // can actually order this product (order mode); any vehicle for block mode.
   React.useEffect(() => {
-    if (product && vehicles?.rows.length) setVehiclePlate(vehicles.rows[0].plate);
-  }, [product, vehicles]);
+    if (!product || !rows.length) return;
+    const firstEligible =
+      mode === "order"
+        ? rows.find((v) => productStatus(v, product).kind === "available")
+        : rows[0];
+    setVehiclePlate((firstEligible ?? rows[0]).plate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, vehicles, mode]);
 
   if (!product) return null;
 
+  const selected = rows.find((v) => v.plate === vehiclePlate);
+  const status = selected ? productStatus(selected, product) : null;
+  const canOrder = mode === "block" ? !!selected : status?.kind === "available";
+
   const submit = async () => {
-    await create.mutateAsync({
-      productCode: product.code,
-      mode,
-      vehiclePlate,
-      quantity: qty,
-    });
-    toast.success(
-      mode === "block"
-        ? `${product.name} blocked for ${vehiclePlate}`
-        : `Ordered ${qty} × ${product.name}`
-    );
-    onOpenChange(false);
+    try {
+      await create.mutateAsync({ productCode: product.code, mode, vehiclePlate, quantity: qty });
+      toast.success(
+        mode === "block"
+          ? `${product.name} blocked for ${vehiclePlate}`
+          : `Ordered ${qty} × ${product.name} for ${vehiclePlate}`
+      );
+      onOpenChange(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Order failed. Please try again.");
+    }
   };
 
   const total = (product.deposit + product.monthlyFee) * qty;
@@ -70,18 +84,43 @@ export function OrderDialog({ product, mode, onOpenChange }: Props) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <Field label="Vehicle" required>
+          <Field
+            label="Vehicle"
+            required
+            hint={
+              mode === "order"
+                ? `Eligible: ${product.eligibleTypes.join(", ")} · ${product.countries.join(", ")}`
+                : undefined
+            }
+          >
             <Select value={vehiclePlate} onValueChange={setVehiclePlate}>
               <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
               <SelectContent>
-                {vehicles?.rows.map((v) => (
-                  <SelectItem key={v.id} value={v.plate}>
-                    {v.plate} · {v.country}
-                  </SelectItem>
-                ))}
+                {rows.map((v) => {
+                  const st = productStatus(v, product);
+                  const blocked = mode === "order" && st.kind !== "available";
+                  return (
+                    <SelectItem key={v.id} value={v.plate} disabled={blocked}>
+                      {v.plate} · {v.type} · {v.country}
+                      {blocked ? ` — ${st.kind === "existing" ? "already active" : "not eligible"}` : ""}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </Field>
+
+          {/* Eligibility notice */}
+          {mode === "order" && status && status.kind !== "available" && (
+            <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+              <Info className="mt-0.5 size-4 shrink-0 text-amber-600" />
+              <span>
+                {status.kind === "existing"
+                  ? `${product.name} is already active on ${vehiclePlate}.`
+                  : status.reason}
+              </span>
+            </div>
+          )}
 
           {mode === "order" && (
             <Field label="Quantity">
@@ -118,7 +157,7 @@ export function OrderDialog({ product, mode, onOpenChange }: Props) {
           <Button
             variant={mode === "block" ? "destructive" : "default"}
             onClick={submit}
-            disabled={!vehiclePlate || create.isPending}
+            disabled={!canOrder || create.isPending}
           >
             {create.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
             {mode === "block" ? "Block product" : "Place order"}

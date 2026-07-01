@@ -89,7 +89,10 @@ export default function ProductsPage() {
                           <p className="mt-1 line-clamp-2 flex-1 text-sm text-muted-foreground">
                             {p.description}
                           </p>
-                          <div className="mt-3 flex flex-wrap gap-1">
+                          <p className="mt-2 text-[11px] font-medium text-muted-foreground">
+                            Eligible: {p.eligibleTypes.join(", ")}
+                          </p>
+                          <div className="mt-1.5 flex flex-wrap gap-1">
                             {p.countries.map((c) => (
                               <span
                                 key={c}

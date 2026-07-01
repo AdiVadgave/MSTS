@@ -10,8 +10,9 @@ import { AuthShell, DEMO } from "./AuthShell";
 export default function LoginPage() {
   const navigate = useNavigate();
   const { user, mfaVerified, login } = useAppStore();
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
+  // Pre-filled with demo credentials so the prototype opens in one click.
+  const [email, setEmail] = React.useState(DEMO.email);
+  const [password, setPassword] = React.useState(DEMO.password);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
@@ -82,14 +83,6 @@ export default function LoginPage() {
           Sign in
         </Button>
       </form>
-
-      <div className="mt-5 flex items-start gap-2 rounded-lg border border-shell-asphalt-line bg-shell-asphalt p-3 text-xs text-[#b7ae9f]">
-        <Info className="mt-0.5 size-3.5 shrink-0 text-shell-yellow" />
-        <span>
-          Demo login — email <span className="font-mono text-shell-paper">{DEMO.email}</span>,
-          password <span className="font-mono text-shell-paper">{DEMO.password}</span>.
-        </span>
-      </div>
     </AuthShell>
   );
 }

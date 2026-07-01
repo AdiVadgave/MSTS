@@ -64,7 +64,6 @@ export default function DashboardPage() {
             One screen.
           </>
         }
-        lede="A single cockpit across MyTolls, MyMST and Toll2.0 — vehicles, devices, tolls and billing, reconciled in real time."
         actions={
           <>
             <Button variant="dark" onClick={() => navigate("/vehicles?rc=1")}>

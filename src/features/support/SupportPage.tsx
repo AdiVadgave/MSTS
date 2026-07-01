@@ -10,6 +10,8 @@ import {
   Globe2,
   Search,
   ChevronRight,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SourceTag } from "@/components/common/SourceTag";
@@ -17,49 +19,97 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field } from "@/components/common/Field";
-import { COUNTRIES } from "@/mocks/catalog";
+import { StatusBadge } from "@/components/common/StatusBadge";
+import { useCreateTicket, useTickets, useDomains } from "@/hooks/api";
+import { PRODUCTS, COUNTRIES } from "@/mocks/catalog";
+import { downloadTablePDF } from "@/lib/download";
+import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 
-const RESOURCES = [
-  {
-    icon: BookOpen,
-    title: "Product help",
-    desc: "Guides for MST Card, OBUs, vignettes & more.",
-    action: () => toast.info("Opening product help guides"),
-  },
-  {
-    icon: Globe2,
-    title: "Country tolls",
-    desc: "Requirements & coverage by country.",
-    action: () => toast.info("Opening country toll requirements"),
-  },
-  {
-    icon: Download,
-    title: "User manuals",
-    desc: "Download PDF manuals for every product.",
-    action: () => toast.success("Manuals downloaded", { description: "msts-one-manuals.zip" }),
-  },
-  {
-    icon: MessageSquare,
-    title: "Give feedback",
-    desc: "Tell us how we can improve MSTS One.",
-    action: () => {
-      document.getElementById("support-contact")?.scrollIntoView({ behavior: "smooth" });
-      toast.info("Share your feedback below");
-    },
-  },
-];
+type DialogKind = "product-help" | "country-tolls" | null;
 
 export default function SupportPage() {
   const [q, setQ] = React.useState("");
+  const [dialog, setDialog] = React.useState<DialogKind>(null);
+  const { data: tickets } = useTickets();
+  const { data: domains } = useDomains();
+  const createTicket = useCreateTicket();
+
+  const [form, setForm] = React.useState({ subject: "", product: "", message: "" });
+
+  const RESOURCES = [
+    {
+      key: "product-help",
+      icon: BookOpen,
+      title: "Product help",
+      desc: "Guides for MST Card, OBUs, vignettes & more.",
+      action: () => setDialog("product-help"),
+    },
+    {
+      key: "country-tolls",
+      icon: Globe2,
+      title: "Country tolls",
+      desc: "Requirements & coverage by country.",
+      action: () => setDialog("country-tolls"),
+    },
+    {
+      key: "manuals",
+      icon: Download,
+      title: "User manuals",
+      desc: "Download a PDF manual index for every product.",
+      action: () => {
+        downloadTablePDF(
+          "msts-one-product-manuals.pdf",
+          "Product manuals",
+          ["Product", "Category", "Countries", "Deposit (EUR)"],
+          PRODUCTS.map((p) => ({
+            Product: p.name,
+            Category: p.category,
+            Countries: p.countries.join(", "),
+            "Deposit (EUR)": p.deposit,
+          })),
+          "MSTS One — product manual index"
+        );
+        toast.success("Manual index downloaded", { description: "msts-one-product-manuals.pdf" });
+      },
+    },
+    {
+      key: "feedback",
+      icon: MessageSquare,
+      title: "Give feedback",
+      desc: "Tell us how we can improve MSTS One.",
+      action: () => {
+        document.getElementById("support-contact")?.scrollIntoView({ behavior: "smooth" });
+        toast.info("Share your feedback below");
+      },
+    },
+  ];
+
   const query = q.trim().toLowerCase();
   const resources = query
-    ? RESOURCES.filter(
-        (r) =>
-          r.title.toLowerCase().includes(query) || r.desc.toLowerCase().includes(query)
-      )
+    ? RESOURCES.filter((r) => r.title.toLowerCase().includes(query) || r.desc.toLowerCase().includes(query))
     : RESOURCES;
+
+  const submitTicket = async () => {
+    if (!form.subject.trim()) return toast.error("Please add a subject");
+    if (!form.message.trim()) return toast.error("Please describe your issue");
+    const t = await createTicket.mutateAsync({
+      subject: form.subject,
+      product: form.product || "General",
+      message: form.message,
+    });
+    setForm({ subject: "", product: "", message: "" });
+    toast.success(`Ticket ${t.reference} submitted`, { description: "We'll reply within 1 business day." });
+  };
 
   return (
     <div className="space-y-6">
@@ -99,7 +149,7 @@ export default function SupportPage() {
         )}
         {resources.map((r) => (
           <Card
-            key={r.title}
+            key={r.key}
             role="button"
             tabIndex={0}
             onClick={r.action}
@@ -130,13 +180,51 @@ export default function SupportPage() {
           <CardHeader><CardTitle>Contact support</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Subject"><Input placeholder="Briefly describe your issue" /></Field>
-              <Field label="Related product"><Input placeholder="e.g. Satellic OBU" /></Field>
+              <Field label="Subject">
+                <Input
+                  value={form.subject}
+                  onChange={(e) => setForm({ ...form, subject: e.target.value })}
+                  placeholder="Briefly describe your issue"
+                />
+              </Field>
+              <Field label="Related product">
+                <Input
+                  value={form.product}
+                  onChange={(e) => setForm({ ...form, product: e.target.value })}
+                  placeholder="e.g. Satellic OBU"
+                />
+              </Field>
             </div>
-            <Field label="Message"><Textarea rows={4} placeholder="How can we help?" /></Field>
-            <Button onClick={() => toast.success("Support ticket submitted — we'll reply within 1 business day")}>
-              <MessageSquare /> Submit ticket
+            <Field label="Message">
+              <Textarea
+                rows={4}
+                value={form.message}
+                onChange={(e) => setForm({ ...form, message: e.target.value })}
+                placeholder="How can we help?"
+              />
+            </Field>
+            <Button onClick={submitTicket} disabled={createTicket.isPending}>
+              {createTicket.isPending ? <Loader2 className="animate-spin" /> : <MessageSquare />} Submit ticket
             </Button>
+
+            {/* Persisted tickets */}
+            {tickets && tickets.length > 0 && (
+              <div className="mt-4 space-y-2 border-t pt-4">
+                <p className="text-sm font-semibold">Your tickets</p>
+                {tickets.map((t) => (
+                  <div key={t.id} className="flex items-center gap-3 rounded-lg border bg-secondary/30 p-2.5">
+                    <CheckCircle2 className="size-4 shrink-0 text-success" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{t.subject}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t.reference} · {t.product} · {formatDate(t.createdAt, true)}
+                      </p>
+                    </div>
+                    <StatusBadge status={t.status} />
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -157,6 +245,49 @@ export default function SupportPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Product help dialog */}
+      <Dialog open={dialog === "product-help"} onOpenChange={(v) => !v && setDialog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Product help</DialogTitle>
+            <DialogDescription>Quick reference for every tolling product in your catalogue.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto">
+            {PRODUCTS.map((p) => (
+              <div key={p.code} className="rounded-lg border p-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">{p.name}</p>
+                  <Badge variant="secondary">{p.category}</Badge>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Available in: {p.countries.join(", ")}</p>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Country tolls dialog */}
+      <Dialog open={dialog === "country-tolls"} onOpenChange={(v) => !v && setDialog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Country toll coverage</DialogTitle>
+            <DialogDescription>Toll schemes and technology per country.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] space-y-2 overflow-y-auto">
+            {(domains ?? []).map((d) => (
+              <div key={d.id} className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="text-sm font-semibold">{d.name}</p>
+                  <p className="text-xs text-muted-foreground">{d.provider} · {d.tech} · {d.rate}</p>
+                </div>
+                <StatusBadge status={d.status} />
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

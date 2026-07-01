@@ -1,3 +1,4 @@
+import * as React from "react";
 import {
   Sheet,
   SheetContent,
@@ -11,10 +12,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Pencil, Power, RadioTower, History, Package } from "lucide-react";
-import { useVehicle, useVehicleHistory, useDeactivateVehicle } from "@/hooks/api";
+import {
+  Pencil, Power, RadioTower, History, Package, ShoppingCart,
+  CheckCircle2, XCircle, AlertTriangle, Loader2,
+} from "lucide-react";
+import {
+  useVehicle, useVehicleHistory, useDeactivateVehicle, useCreateOrder,
+} from "@/hooks/api";
 import { PRODUCTS } from "@/mocks/catalog";
-import { formatDate } from "@/lib/utils";
+import { productStatus, type ProductStatusKind } from "@/lib/eligibility";
+import { cn, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface Props {
@@ -23,16 +30,41 @@ interface Props {
   onEdit: () => void;
 }
 
+const STATUS_CFG: Record<
+  ProductStatusKind,
+  { icon: typeof CheckCircle2; tile: string; badge: "success" | "secondary" | "destructive" | "warning" }
+> = {
+  available: { icon: CheckCircle2, tile: "bg-success/12 text-success", badge: "success" },
+  existing: { icon: CheckCircle2, tile: "bg-primary/10 text-primary", badge: "secondary" },
+  ineligible: { icon: XCircle, tile: "bg-destructive/10 text-destructive", badge: "destructive" },
+  blocked: { icon: AlertTriangle, tile: "bg-warning/15 text-amber-600", badge: "warning" },
+};
+
 export function VehicleDetailSheet({ vehicleId, onOpenChange, onEdit }: Props) {
   const { data: vehicle, isLoading } = useVehicle(vehicleId ?? undefined);
   const { data: history } = useVehicleHistory(vehicleId ?? undefined);
   const deactivate = useDeactivateVehicle();
+  const createOrder = useCreateOrder();
+  const [orderingCode, setOrderingCode] = React.useState<string | null>(null);
 
   const onDeactivate = async () => {
     if (!vehicle) return;
     await deactivate.mutateAsync(vehicle.id);
     toast.success(`${vehicle.plate} deactivated`);
     onOpenChange(false);
+  };
+
+  const orderProduct = async (code: string, name: string) => {
+    if (!vehicle) return;
+    setOrderingCode(code);
+    try {
+      await createOrder.mutateAsync({ productCode: code, mode: "order", vehiclePlate: vehicle.plate, quantity: 1 });
+      toast.success(`Ordered ${name} for ${vehicle.plate}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Order failed");
+    } finally {
+      setOrderingCode(null);
+    }
   };
 
   return (
@@ -63,6 +95,7 @@ export function VehicleDetailSheet({ vehicleId, onOpenChange, onEdit }: Props) {
             <Tabs defaultValue="details">
               <TabsList>
                 <TabsTrigger value="details"><Package /> Details</TabsTrigger>
+                <TabsTrigger value="products"><ShoppingCart /> Products</TabsTrigger>
                 <TabsTrigger value="devices"><RadioTower /> Devices</TabsTrigger>
                 <TabsTrigger value="history"><History /> History</TabsTrigger>
               </TabsList>
@@ -100,6 +133,61 @@ export function VehicleDetailSheet({ vehicleId, onOpenChange, onEdit }: Props) {
                       <p className="text-sm text-muted-foreground">No products ordered yet.</p>
                     )}
                   </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="products" className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">Product Helper</p>
+                  <p className="text-xs text-muted-foreground">
+                    Eligible for a {vehicle.type} in {vehicle.country}
+                  </p>
+                </div>
+
+                {/* Legend */}
+                <div className="flex flex-wrap gap-3 rounded-lg border bg-secondary/30 p-2.5 text-[11px] text-muted-foreground">
+                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-success" /> Available</span>
+                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-primary" /> Existing</span>
+                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-destructive" /> Not eligible</span>
+                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-warning" /> Needs attributes</span>
+                </div>
+
+                <div className="divide-y rounded-xl border">
+                  {PRODUCTS.map((p) => {
+                    const st = productStatus(vehicle, p);
+                    const cfg = STATUS_CFG[st.kind];
+                    return (
+                      <div key={p.code} className="flex items-center gap-3 p-3">
+                        <span className={cn("grid size-8 shrink-0 place-items-center rounded-md", cfg.tile)}>
+                          <cfg.icon className="size-4" />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{p.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {st.kind === "ineligible" || st.kind === "blocked"
+                              ? st.reason
+                              : `${p.category} · ${p.countries.join(", ")}`}
+                          </p>
+                        </div>
+                        {st.kind === "available" ? (
+                          <Button
+                            size="sm"
+                            onClick={() => orderProduct(p.code, p.name)}
+                            disabled={orderingCode === p.code}
+                          >
+                            {orderingCode === p.code ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <ShoppingCart className="size-4" />
+                            )}
+                            Order
+                          </Button>
+                        ) : (
+                          <Badge variant={cfg.badge} className="shrink-0">{st.label}</Badge>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </TabsContent>
 

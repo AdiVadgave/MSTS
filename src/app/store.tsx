@@ -35,31 +35,12 @@ const AppContext = React.createContext<AppState | null>(null);
 const THEME_KEY = "msts-theme";
 const SESSION_KEY = "msts-session";
 
-interface PersistedSession {
-  user: AuthUser | null;
-  mfaVerified: boolean;
-  activePortal: PortalId | null;
-}
-
-function loadSession(): PersistedSession {
-  if (typeof window === "undefined")
-    return { user: null, mfaVerified: false, activePortal: null };
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (raw) return JSON.parse(raw) as PersistedSession;
-  } catch {
-    /* ignore malformed session */
-  }
-  return { user: null, mfaVerified: false, activePortal: null };
-}
-
 export function AppStoreProvider({ children }: { children: React.ReactNode }) {
-  const initial = React.useRef(loadSession()).current;
-  const [user, setUser] = React.useState<AuthUser | null>(initial.user);
-  const [mfaVerified, setMfaVerified] = React.useState(initial.mfaVerified);
-  const [activePortal, setActivePortal] = React.useState<PortalId | null>(
-    initial.activePortal
-  );
+  // Auth is intentionally NOT persisted across loads — opening the app always
+  // starts at the login screen. (Business data still persists via the mock DB.)
+  const [user, setUser] = React.useState<AuthUser | null>(null);
+  const [mfaVerified, setMfaVerified] = React.useState(false);
+  const [activePortal, setActivePortal] = React.useState<PortalId | null>(null);
 
   const [entity, setEntity] = React.useState<Entity | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
@@ -71,13 +52,11 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     return saved === "dark" ? "dark" : "light";
   });
 
-  // Persist the session so a refresh keeps you where you were.
+  // Clear any session persisted by earlier builds so the app always opens
+  // on the login screen.
   React.useEffect(() => {
-    localStorage.setItem(
-      SESSION_KEY,
-      JSON.stringify({ user, mfaVerified, activePortal })
-    );
-  }, [user, mfaVerified, activePortal]);
+    localStorage.removeItem(SESSION_KEY);
+  }, []);
 
   React.useEffect(() => {
     const root = document.documentElement;

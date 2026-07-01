@@ -18,6 +18,8 @@ export type Country =
 
 export type VehicleStatus = "active" | "pending" | "missing_attributes" | "deactivated";
 
+export type VehicleType = "Truck" | "Trailer" | "Bus" | "Van";
+
 export interface Vehicle {
   id: string;
   plate: string;
@@ -25,7 +27,7 @@ export interface Vehicle {
   fleetCode: string;
   mstsId: string;
   legalEntity: string;
-  type: "Truck" | "Trailer" | "Bus" | "Van";
+  type: VehicleType;
   euronorm: "EURO 3" | "EURO 4" | "EURO 5" | "EURO 6" | "";
   totalAxles: number;
   totalWeightKg: number;
@@ -63,6 +65,8 @@ export interface TollProduct {
   name: string;
   category: "Card" | "OBU" | "Vignette" | "RoutePass" | "Rebate";
   countries: Country[];
+  /** Vehicle types this product can be ordered for. */
+  eligibleTypes: VehicleType[];
   description: string;
   deposit: number;
   monthlyFee: number;
@@ -167,6 +171,30 @@ export interface Entity {
   name: string;
   country: Country;
   vatNumber: string;
+  billingAddress?: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  reference: string;
+  subject: string;
+  product: string;
+  message: string;
+  status: "open" | "resolved";
+  createdAt: string;
+}
+
+export interface Profile {
+  name: string;
+  email: string;
+  phone: string;
+  language: string;
+}
+
+export interface Settings {
+  emailNotifications: boolean;
+  weeklySummary: boolean;
+  twoFactor: boolean;
 }
 
 export interface NotificationItem {

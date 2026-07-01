@@ -1,7 +1,8 @@
 import { http, HttpResponse, delay } from "msw";
-import { db } from "./db";
+import { db, persist, resetDb } from "./db";
 import { PRODUCTS, REPORTS } from "./catalog";
 import { listPipeline, parseListParams } from "./helpers";
+import { productStatus } from "@/lib/eligibility";
 import type {
   Vehicle,
   OBU,
@@ -9,6 +10,8 @@ import type {
   Haulier,
   User,
   Invoice,
+  Entity,
+  SupportTicket,
 } from "@/lib/types";
 
 const now = () => new Date().toISOString();
@@ -18,6 +21,92 @@ const latency = () => delay(Math.random() * 350 + 120);
 
 function monthKey(d: Date) {
   return d.toLocaleDateString("en-GB", { month: "short" });
+}
+
+/** Resolve a report id to a concrete column set + rows drawn from the DB. */
+function reportDataset(id: string): {
+  columns: string[];
+  rows: Record<string, unknown>[];
+} {
+  switch (id) {
+    case "truck-detail":
+    case "truck-product-list-csv":
+    case "truck-product-list-pdf":
+      return {
+        columns: ["Plate", "Country", "Type", "EURO norm", "Axles", "Weight (kg)", "Status", "Products"],
+        rows: db.vehicles.map((v) => ({
+          Plate: v.plate,
+          Country: v.country,
+          Type: v.type,
+          "EURO norm": v.euronorm || "—",
+          Axles: v.totalAxles,
+          "Weight (kg)": v.totalWeightKg,
+          Status: v.status,
+          Products: v.products.length,
+        })),
+      };
+    case "customer-list":
+      return {
+        columns: ["Haulier", "VAT number", "Country", "Contact", "Fleet size", "Status"],
+        rows: db.hauliers.map((h) => ({
+          Haulier: h.name,
+          "VAT number": h.vatNumber,
+          Country: h.country,
+          Contact: h.contactEmail,
+          "Fleet size": h.fleetSize,
+          Status: h.status,
+        })),
+      };
+    case "product-domain-list":
+      return {
+        columns: ["Code", "Domain", "Provider", "Tech", "Status", "Vehicles", "OBUs"],
+        rows: db.domains.map((d) => ({
+          Code: d.code,
+          Domain: d.name,
+          Provider: d.provider,
+          Tech: d.tech,
+          Status: d.status,
+          Vehicles: d.assignedVehicles,
+          OBUs: d.assignedObus,
+        })),
+      };
+    case "turnover-analysis":
+    case "card-turnover-comparison": {
+      const map: Record<string, number> = {};
+      db.transactions.forEach((t) => (map[t.country] = (map[t.country] ?? 0) + t.amount));
+      return {
+        columns: ["Country", "Transactions", "Spend (EUR)"],
+        rows: Object.entries(map)
+          .sort((a, b) => b[1] - a[1])
+          .map(([country, spend]) => ({
+            Country: country,
+            Transactions: db.transactions.filter((t) => t.country === country).length,
+            "Spend (EUR)": +spend.toFixed(2),
+          })),
+      };
+    }
+    case "unbilled": {
+      const rows = db.transactions.filter((t) => t.status === "unbilled");
+      return { columns: TX_COLS, rows: rows.map(txRow) };
+    }
+    default: {
+      // transactions / toll-collect-* / eurovignette → transaction rows
+      return { columns: TX_COLS, rows: db.transactions.map(txRow) };
+    }
+  }
+}
+
+const TX_COLS = ["Date", "Vehicle", "Country", "Domain", "Location", "Amount (EUR)", "Status"];
+function txRow(t: (typeof db.transactions)[number]) {
+  return {
+    Date: new Date(t.date).toLocaleDateString("en-GB"),
+    Vehicle: t.vehiclePlate,
+    Country: t.country,
+    Domain: t.domain,
+    Location: t.location,
+    "Amount (EUR)": t.amount,
+    Status: t.status,
+  };
 }
 
 export const handlers = [
@@ -40,6 +129,7 @@ export const handlers = [
   }),
   http.post("/api/notifications/read-all", async () => {
     db.notifications.forEach((n) => (n.read = true));
+    persist();
     return HttpResponse.json({ ok: true });
   }),
   http.get("/api/activity", async () => {
@@ -151,7 +241,7 @@ export const handlers = [
     const v = db.vehicles.find((x) => x.id === params.id);
     if (!v) return new HttpResponse(null, { status: 404 });
     return HttpResponse.json([
-      { at: v.updatedAt, actor: "aman.msts", change: "Updated vehicle attributes" },
+      { at: v.updatedAt, actor: "lars.jansen", change: "Updated vehicle attributes" },
       { at: v.createdAt, actor: "system", change: "Vehicle created" },
     ]);
   }),
@@ -180,12 +270,13 @@ export const handlers = [
     db.vehicles.unshift(v);
     db.activity.unshift({
       id: rid("act"),
-      actor: "aman.msts",
+      actor: "lars.jansen",
       action: "created vehicle",
       target: v.plate,
       time: now(),
       source: "Toll2.0",
     });
+    persist();
     return HttpResponse.json(v, { status: 201 });
   }),
   http.patch("/api/vehicles/:id", async ({ params, request }) => {
@@ -194,6 +285,7 @@ export const handlers = [
     if (idx < 0) return new HttpResponse(null, { status: 404 });
     const body = (await request.json()) as Partial<Vehicle>;
     db.vehicles[idx] = { ...db.vehicles[idx], ...body, updatedAt: now() };
+    persist();
     return HttpResponse.json(db.vehicles[idx]);
   }),
   http.post("/api/vehicles/:id/deactivate", async ({ params }) => {
@@ -202,6 +294,7 @@ export const handlers = [
     if (!v) return new HttpResponse(null, { status: 404 });
     v.status = "deactivated";
     v.updatedAt = now();
+    persist();
     return HttpResponse.json(v);
   }),
   http.post("/api/vehicles/bulk", async ({ request }) => {
@@ -230,6 +323,7 @@ export const handlers = [
       db.vehicles.unshift(v);
       return v;
     });
+    persist();
     return HttpResponse.json({ created: created.length });
   }),
 
@@ -284,6 +378,7 @@ export const handlers = [
         o.status = "returned";
         break;
     }
+    persist();
     return HttpResponse.json(o);
   }),
 
@@ -311,6 +406,21 @@ export const handlers = [
       quantity: number;
     };
     const product = PRODUCTS.find((p) => p.code === body.productCode);
+    const vehicle = db.vehicles.find((v) => v.plate === body.vehiclePlate);
+
+    // Enforce per-vehicle product eligibility on order (block mode is exempt).
+    if (body.mode === "order") {
+      if (!product) return HttpResponse.json({ error: "Unknown product" }, { status: 400 });
+      if (!vehicle) return HttpResponse.json({ error: "Unknown vehicle" }, { status: 400 });
+      const status = productStatus(vehicle, product);
+      if (status.kind !== "available") {
+        return HttpResponse.json(
+          { error: status.reason ?? "This product is not eligible for the selected vehicle." },
+          { status: 422 }
+        );
+      }
+    }
+
     const order: Order = {
       id: rid("ord"),
       reference: `ORD-${Math.floor(100000 + Math.random() * 899999)}`,
@@ -328,14 +438,26 @@ export const handlers = [
       updatedAt: now(),
     };
     db.orders.unshift(order);
+
+    // Reflect the order on the vehicle so status becomes "existing" (or is
+    // removed when blocked).
+    if (vehicle) {
+      if (body.mode === "order" && !vehicle.products.includes(body.productCode)) {
+        vehicle.products.push(body.productCode);
+      } else if (body.mode === "block") {
+        vehicle.products = vehicle.products.filter((c) => c !== body.productCode);
+      }
+      vehicle.updatedAt = now();
+    }
     db.activity.unshift({
       id: rid("act"),
-      actor: "aman.msts",
+      actor: "lars.jansen",
       action: body.mode === "block" ? "blocked product" : "ordered product",
       target: order.productName,
       time: now(),
       source: "MyTolls",
     });
+    persist();
     return HttpResponse.json(order, { status: 201 });
   }),
 
@@ -351,6 +473,7 @@ export const handlers = [
     const body = (await request.json()) as { status?: typeof d.status };
     if (body.status) d.status = body.status;
     d.updatedAt = now();
+    persist();
     return HttpResponse.json(d);
   }),
 
@@ -373,17 +496,19 @@ export const handlers = [
     return HttpResponse.json(result);
   }),
 
-  // ── Reports run (simulated export) ───────────────────────────
+  // ── Reports run — returns REAL rows for the client to export ─
   http.post("/api/reports/:id/run", async ({ params, request }) => {
-    await delay(900);
-    const body = (await request.json().catch(() => ({}))) as {
-      format?: string;
-    };
+    await delay(700);
+    const body = (await request.json().catch(() => ({}))) as { format?: string };
+    const format = body.format ?? "CSV";
+    const { columns, rows } = reportDataset(String(params.id));
     return HttpResponse.json({
       id: params.id,
-      format: body.format ?? "CSV",
-      fileName: `${params.id}-2026Q2.${(body.format ?? "csv").toLowerCase()}`,
-      rows: Math.floor(Math.random() * 4000 + 200),
+      format,
+      fileName: `${params.id}-2026Q2.${format.toLowerCase()}`,
+      count: rows.length,
+      columns,
+      rows,
       generatedAt: now(),
     });
   }),
@@ -421,6 +546,7 @@ export const handlers = [
       createdAt: now(),
     };
     db.hauliers.unshift(h);
+    persist();
     return HttpResponse.json(h, { status: 201 });
   }),
 
@@ -445,6 +571,7 @@ export const handlers = [
     if (!inv) return new HttpResponse(null, { status: 404 });
     if (params.action === "pay") inv.status = "paid";
     if (params.action === "dispute") inv.status = "disputed";
+    persist();
     return HttpResponse.json(inv);
   }),
 
@@ -465,6 +592,7 @@ export const handlers = [
       lastActive: now(),
     };
     db.users.unshift(u);
+    persist();
     return HttpResponse.json(u, { status: 201 });
   }),
   http.patch("/api/users/:id", async ({ params, request }) => {
@@ -473,12 +601,14 @@ export const handlers = [
     if (!u) return new HttpResponse(null, { status: 404 });
     const body = (await request.json()) as Partial<User>;
     Object.assign(u, body);
+    persist();
     return HttpResponse.json(u);
   }),
   http.delete("/api/users/:id", async ({ params }) => {
     await latency();
     const idx = db.users.findIndex((x) => x.id === params.id);
     if (idx >= 0) db.users.splice(idx, 1);
+    persist();
     return HttpResponse.json({ ok: true });
   }),
 
@@ -493,8 +623,97 @@ export const handlers = [
       address: valid ? "Havenweg 12, 3011 Rotterdam, NL" : null,
     });
   }),
-  http.post("/api/onboarding/submit", async () => {
+  http.post("/api/onboarding/submit", async ({ request }) => {
     await delay(900);
-    return HttpResponse.json({ ok: true, entityId: rid("e") });
+    const body = (await request.json().catch(() => ({}))) as {
+      company?: string;
+      vat?: string;
+      country?: string;
+    };
+    const id = rid("e");
+    const seq = 20000 + db.entities.length + Math.floor(Math.random() * 900);
+    const entity: Entity = {
+      id,
+      displayId: `${seq} | ${body.company || "New Company"}`,
+      name: body.company || "New Company",
+      country: (body.country as Entity["country"]) ?? "NL",
+      vatNumber: body.vat || "",
+      billingAddress: "",
+    };
+    db.entities.push(entity);
+    db.activity.unshift({
+      id: rid("act"),
+      actor: "lars.jansen",
+      action: "onboarded company",
+      target: entity.name,
+      time: now(),
+      source: "Toll2.0",
+    });
+    persist();
+    return HttpResponse.json({ ok: true, entityId: id, entity });
+  }),
+
+  // ── Entity update (Account → company details) ────────────────
+  http.patch("/api/entities/:id", async ({ params, request }) => {
+    await latency();
+    const e = db.entities.find((x) => x.id === params.id);
+    if (!e) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as Partial<Entity>;
+    Object.assign(e, body);
+    persist();
+    return HttpResponse.json(e);
+  }),
+
+  // ── Profile & settings (Account) ─────────────────────────────
+  http.get("/api/profile", async () => {
+    await latency();
+    return HttpResponse.json(db.profile);
+  }),
+  http.patch("/api/profile", async ({ request }) => {
+    await latency();
+    const body = (await request.json()) as Partial<typeof db.profile>;
+    Object.assign(db.profile, body);
+    persist();
+    return HttpResponse.json(db.profile);
+  }),
+  http.get("/api/settings", async () => {
+    await latency();
+    return HttpResponse.json(db.settings);
+  }),
+  http.patch("/api/settings", async ({ request }) => {
+    await latency();
+    const body = (await request.json()) as Partial<typeof db.settings>;
+    Object.assign(db.settings, body);
+    persist();
+    return HttpResponse.json(db.settings);
+  }),
+
+  // ── Support tickets ──────────────────────────────────────────
+  http.get("/api/tickets", async () => {
+    await latency();
+    return HttpResponse.json(db.tickets);
+  }),
+  http.post("/api/tickets", async ({ request }) => {
+    await latency();
+    const body = (await request.json()) as Partial<SupportTicket>;
+    const ticket: SupportTicket = {
+      id: rid("tkt"),
+      reference: `TKT-${Math.floor(100000 + Math.random() * 899999)}`,
+      subject: body.subject ?? "Support request",
+      product: body.product ?? "General",
+      message: body.message ?? "",
+      status: "open",
+      createdAt: now(),
+    };
+    db.tickets.unshift(ticket);
+    persist();
+    return HttpResponse.json(ticket, { status: 201 });
+  }),
+
+  // ── System: reset demo data ──────────────────────────────────
+  http.post("/api/system/reset", async () => {
+    await delay(500);
+    resetDb();
+    return HttpResponse.json({ ok: true });
   }),
 ];
