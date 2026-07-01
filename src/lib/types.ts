@@ -22,6 +22,7 @@ export type VehicleType = "Truck" | "Trailer" | "Bus" | "Van";
 
 export interface Vehicle {
   id: string;
+  entityId: string;
   plate: string;
   country: Country;
   fleetCode: string;
@@ -50,6 +51,7 @@ export type OBUStatus =
 
 export interface OBU {
   id: string;
+  entityId: string;
   serial: string;
   type: "Satellic OBU" | "Go-Box" | "Telepass" | "MYTO CZ OBU" | "HU-GO OBU" | "T-Tag";
   status: OBUStatus;
@@ -83,6 +85,7 @@ export type OrderStatus =
 
 export interface Order {
   id: string;
+  entityId: string;
   reference: string;
   productCode: string;
   productName: string;
@@ -119,6 +122,7 @@ export type TxStatus = "billed" | "unbilled" | "exception" | "rejected";
 
 export interface Transaction {
   id: string;
+  entityId: string;
   date: string;
   vehiclePlate: string;
   obuSerial: string | null;
@@ -132,6 +136,7 @@ export interface Transaction {
 
 export interface Haulier {
   id: string;
+  entityId: string;
   name: string;
   vatNumber: string;
   country: Country;
@@ -146,6 +151,7 @@ export type InvoiceStatus = "paid" | "open" | "overdue" | "disputed";
 
 export interface Invoice {
   id: string;
+  entityId: string;
   number: string;
   period: string;
   issuedAt: string;

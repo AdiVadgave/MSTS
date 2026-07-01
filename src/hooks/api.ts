@@ -4,6 +4,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { api, buildQuery } from "@/lib/api";
+import { useAppStore } from "@/app/store";
 import type {
   ActivityEvent,
   Entity,
@@ -33,6 +34,17 @@ export interface ListArgs {
   pageSize?: number;
   sort?: string;
   [key: string]: unknown;
+}
+
+/** The active entity id from the app store (used to scope data per customer). */
+function useEntityId(): string | undefined {
+  return useAppStore().entity?.id;
+}
+
+/** Merge the active entity id into list args so queries scope + refetch on switch. */
+function useScopedArgs(args: ListArgs): ListArgs {
+  const entityId = useEntityId();
+  return { ...args, entityId };
 }
 
 // ── Reference ──────────────────────────────────────────────────
@@ -72,24 +84,34 @@ export interface DashboardSummary {
   transactions: number;
   exceptions: number;
 }
-export const useDashboardSummary = () =>
-  useQuery({ queryKey: ["dashboard"], queryFn: () => api.get<DashboardSummary>("/api/dashboard/summary") });
+export const useDashboardSummary = () => {
+  const entityId = useEntityId();
+  return useQuery({ queryKey: ["dashboard", entityId], queryFn: () => api.get<DashboardSummary>(`/api/dashboard/summary${buildQuery({ entityId })}`) });
+};
 
-export const useSpendTrend = () =>
-  useQuery({ queryKey: ["spend-trend"], queryFn: () => api.get<{ month: string; spend: number }[]>("/api/analytics/spend-trend") });
+export const useSpendTrend = () => {
+  const entityId = useEntityId();
+  return useQuery({ queryKey: ["spend-trend", entityId], queryFn: () => api.get<{ month: string; spend: number }[]>(`/api/analytics/spend-trend${buildQuery({ entityId })}`) });
+};
 
-export const useSpendByCountry = () =>
-  useQuery({ queryKey: ["spend-country"], queryFn: () => api.get<{ country: string; spend: number }[]>("/api/analytics/spend-by-country") });
+export const useSpendByCountry = () => {
+  const entityId = useEntityId();
+  return useQuery({ queryKey: ["spend-country", entityId], queryFn: () => api.get<{ country: string; spend: number }[]>(`/api/analytics/spend-by-country${buildQuery({ entityId })}`) });
+};
 
-export const useFleetStatus = () =>
-  useQuery({ queryKey: ["fleet-status"], queryFn: () => api.get<{ name: string; value: number; key: string }[]>("/api/analytics/fleet-status") });
+export const useFleetStatus = () => {
+  const entityId = useEntityId();
+  return useQuery({ queryKey: ["fleet-status", entityId], queryFn: () => api.get<{ name: string; value: number; key: string }[]>(`/api/analytics/fleet-status${buildQuery({ entityId })}`) });
+};
 
 // ── Vehicles ───────────────────────────────────────────────────
-export const useVehicles = (args: ListArgs) =>
-  useQuery({
-    queryKey: ["vehicles", args],
-    queryFn: () => api.get<Paginated<Vehicle>>(`/api/vehicles${buildQuery(args)}`),
+export const useVehicles = (args: ListArgs) => {
+  const scoped = useScopedArgs(args);
+  return useQuery({
+    queryKey: ["vehicles", scoped],
+    queryFn: () => api.get<Paginated<Vehicle>>(`/api/vehicles${buildQuery(scoped)}`),
   });
+};
 
 export const useVehicle = (id?: string) =>
   useQuery({
@@ -108,8 +130,9 @@ export const useVehicleHistory = (id?: string) =>
 
 export function useCreateVehicle() {
   const qc = useQueryClient();
+  const entityId = useEntityId();
   return useMutation({
-    mutationFn: (body: Partial<Vehicle>) => api.post<Vehicle>("/api/vehicles", body),
+    mutationFn: (body: Partial<Vehicle>) => api.post<Vehicle>("/api/vehicles", { ...body, entityId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicles"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
@@ -143,9 +166,10 @@ export function useDeactivateVehicle() {
 
 export function useBulkVehicles() {
   const qc = useQueryClient();
+  const entityId = useEntityId();
   return useMutation({
     mutationFn: (rows: Partial<Vehicle>[]) =>
-      api.post<{ created: number }>("/api/vehicles/bulk", { rows }),
+      api.post<{ created: number }>("/api/vehicles/bulk", { rows, entityId }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicles"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
@@ -155,11 +179,13 @@ export function useBulkVehicles() {
 
 // ── OBUs ───────────────────────────────────────────────────────
 export type OBURow = OBU & { vehiclePlate: string | null };
-export const useObus = (args: ListArgs) =>
-  useQuery({
-    queryKey: ["obus", args],
-    queryFn: () => api.get<Paginated<OBURow>>(`/api/obus${buildQuery(args)}`),
+export const useObus = (args: ListArgs) => {
+  const scoped = useScopedArgs(args);
+  return useQuery({
+    queryKey: ["obus", scoped],
+    queryFn: () => api.get<Paginated<OBURow>>(`/api/obus${buildQuery(scoped)}`),
   });
+};
 
 export function useObuAction() {
   const qc = useQueryClient();
@@ -171,11 +197,13 @@ export function useObuAction() {
 }
 
 // ── Orders ─────────────────────────────────────────────────────
-export const useOrders = (args: ListArgs) =>
-  useQuery({
-    queryKey: ["orders", args],
-    queryFn: () => api.get<Paginated<Order>>(`/api/orders${buildQuery(args)}`),
+export const useOrders = (args: ListArgs) => {
+  const scoped = useScopedArgs(args);
+  return useQuery({
+    queryKey: ["orders", scoped],
+    queryFn: () => api.get<Paginated<Order>>(`/api/orders${buildQuery(scoped)}`),
   });
+};
 
 export function useCreateOrder() {
   const qc = useQueryClient();
@@ -210,11 +238,13 @@ export function useUpdateDomain() {
 }
 
 // ── Transactions ───────────────────────────────────────────────
-export const useTransactions = (args: ListArgs) =>
-  useQuery({
-    queryKey: ["transactions", args],
-    queryFn: () => api.get<Paginated<Transaction>>(`/api/transactions${buildQuery(args)}`),
+export const useTransactions = (args: ListArgs) => {
+  const scoped = useScopedArgs(args);
+  return useQuery({
+    queryKey: ["transactions", scoped],
+    queryFn: () => api.get<Paginated<Transaction>>(`/api/transactions${buildQuery(scoped)}`),
   });
+};
 
 // ── Reports ────────────────────────────────────────────────────
 export function useRunReport() {
@@ -225,26 +255,31 @@ export function useRunReport() {
 }
 
 // ── Hauliers ───────────────────────────────────────────────────
-export const useHauliers = (args: ListArgs) =>
-  useQuery({
-    queryKey: ["hauliers", args],
-    queryFn: () => api.get<Paginated<Haulier>>(`/api/hauliers${buildQuery(args)}`),
+export const useHauliers = (args: ListArgs) => {
+  const scoped = useScopedArgs(args);
+  return useQuery({
+    queryKey: ["hauliers", scoped],
+    queryFn: () => api.get<Paginated<Haulier>>(`/api/hauliers${buildQuery(scoped)}`),
   });
+};
 
 export function useCreateHaulier() {
   const qc = useQueryClient();
+  const entityId = useEntityId();
   return useMutation({
-    mutationFn: (body: Partial<Haulier>) => api.post<Haulier>("/api/hauliers", body),
+    mutationFn: (body: Partial<Haulier>) => api.post<Haulier>("/api/hauliers", { ...body, entityId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["hauliers"] }),
   });
 }
 
 // ── Invoices ───────────────────────────────────────────────────
-export const useInvoices = (args: ListArgs) =>
-  useQuery({
-    queryKey: ["invoices", args],
-    queryFn: () => api.get<Paginated<Invoice>>(`/api/invoices${buildQuery(args)}`),
+export const useInvoices = (args: ListArgs) => {
+  const scoped = useScopedArgs(args);
+  return useQuery({
+    queryKey: ["invoices", scoped],
+    queryFn: () => api.get<Paginated<Invoice>>(`/api/invoices${buildQuery(scoped)}`),
   });
+};
 
 export function useInvoiceAction() {
   const qc = useQueryClient();
@@ -318,9 +353,10 @@ export interface ReportRun {
   generatedAt: string;
 }
 export function useRunReportData() {
+  const entityId = useEntityId();
   return useMutation({
     mutationFn: ({ id, format }: { id: string; format: string }) =>
-      api.post<ReportRun>(`/api/reports/${id}/run`, { format }),
+      api.post<ReportRun>(`/api/reports/${id}/run`, { format, entityId }),
   });
 }
 

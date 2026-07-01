@@ -23,18 +23,26 @@ function monthKey(d: Date) {
   return d.toLocaleDateString("en-GB", { month: "short" });
 }
 
+/** Filter any entity-owned collection by the active entity (or pass through). */
+function scopeByEntity<T extends { entityId: string }>(rows: T[], eid: string | null): T[] {
+  return eid ? rows.filter((r) => r.entityId === eid) : rows;
+}
+
 /** Resolve a report id to a concrete column set + rows drawn from the DB. */
-function reportDataset(id: string): {
-  columns: string[];
-  rows: Record<string, unknown>[];
-} {
+function reportDataset(
+  id: string,
+  eid: string | null
+): { columns: string[]; rows: Record<string, unknown>[] } {
+  const vehicles = scopeByEntity(db.vehicles, eid);
+  const hauliers = scopeByEntity(db.hauliers, eid);
+  const transactions = scopeByEntity(db.transactions, eid);
   switch (id) {
     case "truck-detail":
     case "truck-product-list-csv":
     case "truck-product-list-pdf":
       return {
         columns: ["Plate", "Country", "Type", "EURO norm", "Axles", "Weight (kg)", "Status", "Products"],
-        rows: db.vehicles.map((v) => ({
+        rows: vehicles.map((v) => ({
           Plate: v.plate,
           Country: v.country,
           Type: v.type,
@@ -48,7 +56,7 @@ function reportDataset(id: string): {
     case "customer-list":
       return {
         columns: ["Haulier", "VAT number", "Country", "Contact", "Fleet size", "Status"],
-        rows: db.hauliers.map((h) => ({
+        rows: hauliers.map((h) => ({
           Haulier: h.name,
           "VAT number": h.vatNumber,
           Country: h.country,
@@ -73,25 +81,24 @@ function reportDataset(id: string): {
     case "turnover-analysis":
     case "card-turnover-comparison": {
       const map: Record<string, number> = {};
-      db.transactions.forEach((t) => (map[t.country] = (map[t.country] ?? 0) + t.amount));
+      transactions.forEach((t) => (map[t.country] = (map[t.country] ?? 0) + t.amount));
       return {
         columns: ["Country", "Transactions", "Spend (EUR)"],
         rows: Object.entries(map)
           .sort((a, b) => b[1] - a[1])
           .map(([country, spend]) => ({
             Country: country,
-            Transactions: db.transactions.filter((t) => t.country === country).length,
+            Transactions: transactions.filter((t) => t.country === country).length,
             "Spend (EUR)": +spend.toFixed(2),
           })),
       };
     }
     case "unbilled": {
-      const rows = db.transactions.filter((t) => t.status === "unbilled");
-      return { columns: TX_COLS, rows: rows.map(txRow) };
+      return { columns: TX_COLS, rows: transactions.filter((t) => t.status === "unbilled").map(txRow) };
     }
     default: {
       // transactions / toll-collect-* / eurovignette → transaction rows
-      return { columns: TX_COLS, rows: db.transactions.map(txRow) };
+      return { columns: TX_COLS, rows: transactions.map(txRow) };
     }
   }
 }
@@ -137,35 +144,38 @@ export const handlers = [
     return HttpResponse.json(db.activity);
   }),
 
-  // ── Dashboard summary + analytics ────────────────────────────
-  http.get("/api/dashboard/summary", async () => {
+  // ── Dashboard summary + analytics (entity-scoped) ────────────
+  http.get("/api/dashboard/summary", async ({ request }) => {
     await latency();
-    const active = db.vehicles.filter((v) => v.status === "active").length;
-    const missing = db.vehicles.filter(
-      (v) => v.status === "missing_attributes"
-    ).length;
-    const pending = db.vehicles.filter((v) => v.status === "pending").length;
-    const spend = db.transactions.reduce((s, t) => s + t.amount, 0);
-    const openInvoices = db.invoices
+    const eid = new URL(request.url).searchParams.get("entityId");
+    const vehicles = scopeByEntity(db.vehicles, eid);
+    const transactions = scopeByEntity(db.transactions, eid);
+    const invoices = scopeByEntity(db.invoices, eid);
+    const obus = scopeByEntity(db.obus, eid);
+    const active = vehicles.filter((v) => v.status === "active").length;
+    const missing = vehicles.filter((v) => v.status === "missing_attributes").length;
+    const pending = vehicles.filter((v) => v.status === "pending").length;
+    const spend = transactions.reduce((s, t) => s + t.amount, 0);
+    const openInvoices = invoices
       .filter((i) => i.status === "open" || i.status === "overdue")
       .reduce((s, i) => s + i.amount, 0);
-    const activeObus = db.obus.filter((o) => o.status === "active").length;
     return HttpResponse.json({
-      vehicles: db.vehicles.length,
+      vehicles: vehicles.length,
       activeVehicles: active,
       missingAttributes: missing,
       pendingVehicles: pending,
-      obus: db.obus.length,
-      activeObus,
+      obus: obus.length,
+      activeObus: obus.filter((o) => o.status === "active").length,
       periodSpend: +spend.toFixed(2),
       openInvoices: +openInvoices.toFixed(2),
-      transactions: db.transactions.length,
-      exceptions: db.transactions.filter((t) => t.status === "exception").length,
+      transactions: transactions.length,
+      exceptions: transactions.filter((t) => t.status === "exception").length,
     });
   }),
 
-  http.get("/api/analytics/spend-trend", async () => {
+  http.get("/api/analytics/spend-trend", async ({ request }) => {
     await latency();
+    const eid = new URL(request.url).searchParams.get("entityId");
     const buckets: Record<string, number> = {};
     const order: string[] = [];
     for (let i = 5; i >= 0; i--) {
@@ -175,7 +185,7 @@ export const handlers = [
       buckets[k] = 0;
       order.push(k);
     }
-    db.transactions.forEach((t) => {
+    scopeByEntity(db.transactions, eid).forEach((t) => {
       const k = monthKey(new Date(t.date));
       if (k in buckets) buckets[k] += t.amount;
     });
@@ -184,10 +194,11 @@ export const handlers = [
     );
   }),
 
-  http.get("/api/analytics/spend-by-country", async () => {
+  http.get("/api/analytics/spend-by-country", async ({ request }) => {
     await latency();
+    const eid = new URL(request.url).searchParams.get("entityId");
     const map: Record<string, number> = {};
-    db.transactions.forEach((t) => {
+    scopeByEntity(db.transactions, eid).forEach((t) => {
       map[t.country] = (map[t.country] ?? 0) + t.amount;
     });
     return HttpResponse.json(
@@ -198,10 +209,11 @@ export const handlers = [
     );
   }),
 
-  http.get("/api/analytics/fleet-status", async () => {
+  http.get("/api/analytics/fleet-status", async ({ request }) => {
     await latency();
-    const count = (s: string) =>
-      db.vehicles.filter((v) => v.status === s).length;
+    const eid = new URL(request.url).searchParams.get("entityId");
+    const vehicles = scopeByEntity(db.vehicles, eid);
+    const count = (s: string) => vehicles.filter((v) => v.status === s).length;
     return HttpResponse.json([
       { name: "Active", value: count("active"), key: "active" },
       { name: "Pending", value: count("pending"), key: "pending" },
@@ -219,6 +231,7 @@ export const handlers = [
       q: p.q,
       searchFields: ["plate", "fleetCode", "mstsId", "vin", "legalEntity"],
       filters: {
+        entityId: url.searchParams.get("entityId"),
         status: url.searchParams.get("status"),
         country: url.searchParams.get("country"),
       },
@@ -248,13 +261,16 @@ export const handlers = [
   http.post("/api/vehicles", async ({ request }) => {
     await latency();
     const body = (await request.json()) as Partial<Vehicle>;
+    const entityId = body.entityId ?? db.entities[0].id;
+    const entity = db.entities.find((e) => e.id === entityId) ?? db.entities[0];
     const v: Vehicle = {
       id: rid("veh"),
+      entityId: entity.id,
       plate: body.plate ?? "NEW-000",
       country: body.country ?? "NL",
       fleetCode: body.fleetCode ?? "",
       mstsId: String(Math.floor(50000 + Math.random() * 9999)),
-      legalEntity: body.legalEntity ?? db.entities[0].name,
+      legalEntity: body.legalEntity ?? entity.name,
       type: body.type ?? "Truck",
       euronorm: body.euronorm ?? "EURO 6",
       totalAxles: body.totalAxles ?? 2,
@@ -299,15 +315,18 @@ export const handlers = [
   }),
   http.post("/api/vehicles/bulk", async ({ request }) => {
     await latency();
-    const body = (await request.json()) as { rows: Partial<Vehicle>[] };
+    const body = (await request.json()) as { rows: Partial<Vehicle>[]; entityId?: string };
+    const bulkEntityId = body.entityId ?? db.entities[0].id;
+    const bulkEntity = db.entities.find((e) => e.id === bulkEntityId) ?? db.entities[0];
     const created = (body.rows ?? []).map((r) => {
       const v: Vehicle = {
         id: rid("veh"),
+        entityId: bulkEntity.id,
         plate: r.plate ?? "BULK-000",
         country: r.country ?? "NL",
         fleetCode: r.fleetCode ?? "",
         mstsId: String(Math.floor(50000 + Math.random() * 9999)),
-        legalEntity: db.entities[0].name,
+        legalEntity: bulkEntity.name,
         type: r.type ?? "Truck",
         euronorm: r.euronorm ?? "EURO 6",
         totalAxles: r.totalAxles ?? 2,
@@ -341,6 +360,7 @@ export const handlers = [
       q: p.q,
       searchFields: ["serial", "type"],
       filters: {
+        entityId: url.searchParams.get("entityId"),
         status: url.searchParams.get("status"),
         type: url.searchParams.get("type"),
       },
@@ -390,7 +410,7 @@ export const handlers = [
     const result = listPipeline<Order>(db.orders, {
       q: p.q,
       searchFields: ["reference", "productName", "vehiclePlate"],
-      filters: { status: url.searchParams.get("status") },
+      filters: { status: url.searchParams.get("status"), entityId: url.searchParams.get("entityId") },
       sort: p.sort ?? "-createdAt",
       page: p.page,
       pageSize: p.pageSize,
@@ -423,6 +443,7 @@ export const handlers = [
 
     const order: Order = {
       id: rid("ord"),
+      entityId: vehicle?.entityId ?? db.entities[0].id,
       reference: `ORD-${Math.floor(100000 + Math.random() * 899999)}`,
       productCode: body.productCode,
       productName: product?.name ?? body.productCode,
@@ -486,6 +507,7 @@ export const handlers = [
       q: p.q,
       searchFields: ["vehiclePlate", "obuSerial", "location", "domain"],
       filters: {
+        entityId: url.searchParams.get("entityId"),
         status: url.searchParams.get("status"),
         country: url.searchParams.get("country"),
       },
@@ -499,9 +521,9 @@ export const handlers = [
   // ── Reports run — returns REAL rows for the client to export ─
   http.post("/api/reports/:id/run", async ({ params, request }) => {
     await delay(700);
-    const body = (await request.json().catch(() => ({}))) as { format?: string };
+    const body = (await request.json().catch(() => ({}))) as { format?: string; entityId?: string };
     const format = body.format ?? "CSV";
-    const { columns, rows } = reportDataset(String(params.id));
+    const { columns, rows } = reportDataset(String(params.id), body.entityId ?? null);
     return HttpResponse.json({
       id: params.id,
       format,
@@ -522,6 +544,7 @@ export const handlers = [
       q: p.q,
       searchFields: ["name", "vatNumber", "contactEmail"],
       filters: {
+        entityId: url.searchParams.get("entityId"),
         status: url.searchParams.get("status"),
         country: url.searchParams.get("country"),
       },
@@ -536,6 +559,7 @@ export const handlers = [
     const body = (await request.json()) as Partial<Haulier>;
     const h: Haulier = {
       id: rid("hlr"),
+      entityId: body.entityId ?? db.entities[0].id,
       name: body.name ?? "New Haulier",
       vatNumber: body.vatNumber ?? "",
       country: body.country ?? "NL",
@@ -558,7 +582,7 @@ export const handlers = [
     const result = listPipeline<Invoice>(db.invoices, {
       q: p.q,
       searchFields: ["number", "period"],
-      filters: { status: url.searchParams.get("status") },
+      filters: { status: url.searchParams.get("status"), entityId: url.searchParams.get("entityId") },
       sort: p.sort ?? "-issuedAt",
       page: p.page,
       pageSize: p.pageSize,

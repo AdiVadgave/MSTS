@@ -91,7 +91,7 @@ export default function MfaPage() {
               onChange={(e) => setDigit(i, e.target.value)}
               onKeyDown={(e) => onKeyDown(i, e)}
               className={cn(
-                "h-12 w-full rounded-lg border bg-white text-center font-display text-xl font-bold text-foreground outline-none transition-colors",
+                "h-12 w-full rounded-lg border bg-white text-center font-display text-xl font-bold text-shell-ink outline-none transition-colors",
                 "border-shell-asphalt-line focus:border-shell-yellow focus:ring-2 focus:ring-shell-yellow/40",
                 error && "border-destructive"
               )}

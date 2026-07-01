@@ -167,7 +167,7 @@ export function RcCardSheet({ open, onOpenChange, onUseData }: RcCardSheetProps)
           {file && (extract.isPending || result) && (
             <div className="space-y-3 rounded-xl border bg-secondary/30 p-4">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <ScanLine className="size-4 text-primary" /> Azure Foundry · AI Services
+                <ScanLine className="size-4 text-primary" /> AI Services
               </div>
               {STEPS.map((label, i) => {
                 const done = result ? true : i < activeStep;

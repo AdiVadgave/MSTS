@@ -101,6 +101,13 @@
     @apply bg-background text-foreground antialiased;
   }
 
+  /* Safety net: if a browser ever autofills an input, keep the text legible
+     (Chrome otherwise renders autofilled text faint). */
+  input:-webkit-autofill {
+    -webkit-text-fill-color: hsl(var(--foreground));
+    caret-color: hsl(var(--foreground));
+  }
+
   /* Editorial headings — Archivo, tight, heavy */
   h1, h2, h3, .font-display {
     font-family: "Archivo", ui-sans-serif, system-ui, sans-serif;

@@ -4,7 +4,9 @@
 // Bump VERSION to invalidate an old seed shape after schema changes.
 
 const STORAGE_KEY = "msts-db";
-const VERSION = 2;
+// v3: every record now carries an `entityId` for customer scoping. Bumping
+// this invalidates any pre-scoping cache so it reseeds with tagged data.
+const VERSION = 3;
 
 interface Envelope<T> {
   __v: number;

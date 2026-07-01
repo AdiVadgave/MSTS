@@ -1,0 +1,413 @@
+# MSTS One — Full Manual Test Plan
+
+A complete, execute-as-you-read test guide for the unified portal prototype.
+Work top to bottom; each case has **Steps** and the **Expected result**. Mark the
+**Status** box (✅ pass / ❌ fail / ✍️ note) as you go.
+
+---
+
+## 0. Test setup
+
+| | |
+|---|---|
+| **Start app** | `npm run dev` → open `http://localhost:5173` |
+| **Servers** | Vite (web) on `5173`, AI proxy on `8787` (auto-started together) |
+| **Demo login** | email `demo@mstsone.eu`, password `msts1234` (pre-filled) |
+| **Demo MFA code** | `123456` (pre-filled) |
+| **Azure RC-card** | Real GPT‑4o if `.env` keys are set; otherwise a realistic **mock** extraction |
+| **Reset data** | Account → Preferences → **Reset demo data** (restores the seeded corpus) |
+| **Browsers** | Test in Chrome/Edge; also narrow the window to ~375px for responsive checks |
+
+**Before each full pass:** if the app misbehaves after code changes, do a **hard
+refresh (Ctrl+Shift+R)** to re-register the Mock Service Worker. If a control that
+hits `/api/*` silently fails, open DevTools → Console — a `[MSW] Unhandled API
+call …` warning means the worker is stale (hard refresh fixes it).
+
+**What is real vs simulated** (don't log these as bugs):
+- **Simulated (no backend):** login / MFA / password change / 2FA toggle, "resend
+  code", "resend invite" (no email is sent), "Scheduled reports" (informational).
+- **Real:** all CRUD + persistence (localStorage), file exports (CSV/XLS/PDF),
+  eligibility enforcement, **entity/customer data scoping** (see §3.5), and
+  RC‑card extraction (Azure GPT‑4o when keys present).
+
+> **Data is scoped to the selected entity.** The top-bar entity switcher
+> (e.g. "13768 | NVD Stage BP 1") filters Vehicles, OBUs, Products/Orders,
+> Transactions, Reports, Hauliers, Finance and the Dashboard to that customer.
+> So record counts differ per entity — that's expected, not missing data. Use
+> **Reset demo data** (Account → Preferences) to restore the seeded corpus.
+
+Legend for statuses: **☐ Pass ☐ Fail — notes**
+
+---
+
+## 1. Authentication & entry gating
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| A1 | App opens on Login | Open `http://localhost:5173/` | Redirected to **/login** (never straight to a portal) | ☐ |
+| A2 | Deep link is gated | Open `http://localhost:5173/vehicles` directly | Redirected to **/login** | ☐ |
+| A3 | Creds pre-filled | Observe the login form | Email `demo@mstsone.eu` and password already populated | ☐ |
+| A4 | Wrong credentials | Change password to `wrong`, click **Sign in** | Inline error "Invalid credentials…"; stays on login | ☐ |
+| A5 | Valid login | With defaults, click **Sign in** | Brief spinner → navigates to **/mfa** | ☐ |
+| A6 | MFA pre-filled | Observe the 6 boxes | Show `1 2 3 4 5 6` | ☐ |
+| A7 | Wrong MFA | Clear boxes, type `000000`, **Verify** | Error "Incorrect code…"; boxes reset | ☐ |
+| A8 | MFA paste | Clear, paste `123456` into first box | All six fill; focus advances | ☐ |
+| A9 | Valid MFA | **Verify & continue** | Navigates to **/launcher** | ☐ |
+| A10 | Resend code | On MFA, click **Resend code** | Toast "Verification code re-sent…" (simulated) | ☐ |
+| A11 | Launcher shows 3 portals | On /launcher | Three cards: MyTolls, MyMST, Toll 2.0, each with accent + highlights | ☐ |
+| A12 | Sign out from launcher | Click **Sign out** | Returns to /login | ☐ |
+| A13 | Open a portal | Log back in → MFA → click **Toll 2.0** | Lands on **Dashboard** (`/`) | ☐ |
+| A14 | Non-Toll2.0 landing | From launcher open **MyTolls** | Lands on **/vehicles** (MyMST → /transactions) | ☐ |
+| A15 | Refresh logs out | Anywhere in the app, hard refresh | Returns to **/login** (auth intentionally not persisted) | ☐ |
+| A16 | Sign out from top bar | Profile menu (avatar) → **Sign out** | Toast + back to /login | ☐ |
+
+---
+
+## 2. App shell & navigation
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| S1 | Sidebar reflects portal | Open **MyTolls** portal | Sidebar shows **Vehicles, Hauliers, Products & Ordering** + General (Support, Account). No Dashboard/OBU/Domains/Transactions/Reports/Finance/Users | ☐ |
+| S2 | Sidebar (MyMST) | Switch to **MyMST** | Shows **Transactions, Reports, Invoices & AR** + General | ☐ |
+| S3 | Sidebar (Toll 2.0) | Switch to **Toll 2.0** | Shows **Dashboard, Vehicles, OBU & Devices, Domains, Users & Access, Onboarding** + General | ☐ |
+| S4 | Portal switcher | Top bar portal dropdown → pick another | Nav + landing change; identity dot/colour updates; no re-login | ☐ |
+| S5 | "All portals" | Portal dropdown → **All portals** | Returns to /launcher | ☐ |
+| S6 | Entity switcher scopes data | Open Transactions; note "Showing 1–x of **N**"; top-bar entity dropdown → pick another entity | **N changes live** (no reload) — data reflects the new customer. See §3.5 | ☐ |
+| S7 | Entity persists | Select entity 2, hard refresh, log back in | Same entity is selected (stored in `msts-entity`) | ☐ |
+| S8 | Sidebar collapse | Click **Collapse** at sidebar foot | Rail collapses to icons; tooltips on hover; toggle back | ☐ |
+| S9 | Theme toggle | Top bar sun/moon | Switches light/dark; persists across reload | ☐ |
+| S10 | Command palette open | Press **Ctrl/⌘ + K** | Palette opens with search | ☐ |
+| S11 | Palette scoped | In **MyMST**, open ⌘K | Only MyMST modules + General appear; quick-actions limited (no "Add vehicle") | ☐ |
+| S12 | Palette navigate | Type "reports", Enter | Navigates to Reports; palette closes | ☐ |
+| S13 | Notifications | Bell icon | Popover lists notifications; unread badge count correct | ☐ |
+| S14 | Mark all read | In popover → **Mark all read** | Unread badge clears; toast; persists on reload | ☐ |
+| S15 | Profile deep links | Avatar → **My account / Company settings** | Opens Account on correct tab (`?tab=profile` / `?tab=entity`) | ☐ |
+| S16 | Responsive nav | Narrow window < 1024px | Sidebar hides; hamburger opens a drawer; search icon opens palette | ☐ |
+
+---
+
+## 3. Data persistence & reset (critical)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| P1 | Create persists | Vehicles → add a vehicle `TEST-01` → hard refresh → log back in → search `TEST-01` | Vehicle still present after reload | ☐ |
+| P2 | Edit persists | Edit a vehicle's fleet code → refresh | Change survives | ☐ |
+| P3 | Order persists | Order a product for a vehicle → refresh | Order + vehicle product survive | ☐ |
+| P4 | Ticket persists | Support → submit a ticket → refresh | Ticket still listed under "Your tickets" | ☐ |
+| P5 | Settings persist | Account → toggle "Weekly summary" on → refresh | Toggle stays on | ☐ |
+| P6 | Reset demo data | Account → Preferences → **Reset demo data** → confirm | All lists return to seeded state; `TEST-01` gone; toast confirms | ☐ |
+
+---
+
+## 3.5 Entity / customer data scoping (data sync)
+
+The top-bar entity selector filters all customer-owned data. Switching entity
+must **refetch live** and every module must show only that customer's records.
+The three seeded entities are **NVD Stage BP 1**, **Automation Foreign Std**,
+**Meridian Logistics**. (Reset demo data first for the reference numbers below.)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| EN1 | Vehicles scope | Toll 2.0 → Vehicles; note total; switch entity in top bar | Vehicle list + total change to the new customer; no reload | ☐ |
+| EN2 | Transactions scope | MyMST → Transactions; note "of N"; switch entity | Total changes (reference: NVD 137 / Automation 114 / Meridian 89 on a fresh reset) | ☐ |
+| EN3 | Invoices scope | MyMST → Invoices & AR; switch entity | Invoice list changes (≈6 per entity on fresh data) | ☐ |
+| EN4 | Hauliers scope | MyTolls → Hauliers; switch entity | Only that entity's hauliers shown | ☐ |
+| EN5 | Orders scope | Products → Orders tab; switch entity | Only that entity's orders shown | ☐ |
+| EN6 | Dashboard scope | Toll 2.0 → Dashboard; switch entity | KPI strip, charts and activity all recompute for the entity | ☐ |
+| EN7 | No leakage / totals add up | Sum a metric (e.g. vehicles) across all 3 entities | Equals the seeded global total (vehicles = **68**, transactions = **340**, invoices = **18**) | ☐ |
+| EN8 | Create is scoped | Select entity B → add a vehicle → it appears under B; switch to entity A | New vehicle appears **only** under entity B, not A | ☐ |
+| EN9 | Export is scoped | Select an entity → Transactions **Export** / Reports **Run** | Exported file contains **only that entity's** rows | ☐ |
+| EN10 | Persist + scope | Select entity B, refresh, log back in | Still on entity B; its scoped data shows | ☐ |
+
+> **Not scoped (by design):** the entities list itself, product catalogue, toll
+> domains (network-wide), Users & Access, Support and Account settings are
+> account/global — they do **not** change when you switch entity.
+
+---
+
+## 4. Dashboard (Toll 2.0)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| D1 | KPIs load | Open Dashboard | Signage hero, ticker of countries, asphalt stat strip with numbers (active vehicles/OBUs/spend/receivables) | ☐ |
+| D2 | Loading state | Hard refresh Dashboard | Skeletons show briefly before data | ☐ |
+| D3 | Stat drill-down | Click **Active vehicles** stat | Navigates to Vehicles filtered `status=active` | ☐ |
+| D4 | Spend stat | Click **Toll spend** | Navigates to Transactions | ☐ |
+| D5 | Charts render | Observe charts | Spend trend (area), fleet status (donut), spend by country (bars) all render | ☐ |
+| D6 | Needs attention | Observe "Needs attention" card | Lists missing-attribute vehicles / exceptions / alerts with working CTAs | ☐ |
+| D7 | Activity feed | Observe recent activity | Cross-portal events with source tags; plates render as plate tiles | ☐ |
+| D8 | Hero actions | Click **Extract RC card** / **Add vehicle** | Navigate to Vehicles with the right drawer open | ☐ |
+
+---
+
+## 5. Vehicles
+
+### 5a. List, search, filter, sort, paginate
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| V1 | List loads | Open Vehicles | Table with plate tiles, columns, pagination "1–10 of N" | ☐ |
+| V2 | Search | Type a plate fragment | List filters (debounced); count updates | ☐ |
+| V3 | Status filter | Filter = Missing attrs | Only missing-attribute vehicles shown | ☐ |
+| V4 | Country filter | Filter = Germany | Only DE vehicles | ☐ |
+| V5 | Sort | Click **Plate** / **Updated** headers | Sort toggles asc/desc/none | ☐ |
+| V6 | Paginate | Next / Prev | Page advances; boundary buttons disable | ☐ |
+| V7 | Empty state | Search gibberish `zzzzz` | "No vehicles found" empty state | ☐ |
+
+### 5b. Create / validate
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| V8 | Open create | **Add vehicle** | Drawer opens with defaults (country NL, EURO 6, etc.) | ☐ |
+| V9 | Validation | Clear Plate, submit | Inline error "Plate is required"; no save | ☐ |
+| V10 | Numeric bounds | Total axles = 1, submit | Validation error (min 2) | ☐ |
+| V11 | Create success | Fill valid data, **Create vehicle** | Toast "Vehicle … created"; appears at top of list | ☐ |
+
+### 5c. Detail, edit, deactivate
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| V12 | Open detail | Click a row | Detail drawer: Details / Products / Devices / History tabs | ☐ |
+| V13 | Details tab | View | Attributes + active products badges | ☐ |
+| V14 | History tab | View | Timeline (created / updated) | ☐ |
+| V15 | Devices tab | View | Assigned OBUs (or empty message) | ☐ |
+| V16 | Edit | **Edit vehicle**, change weight, save | Toast "updated"; value reflects in list/detail | ☐ |
+| V17 | Deactivate | **Deactivate** | Status → Deactivated; drawer closes; reflected in list | ☐ |
+
+### 5d. Bulk & RC-card
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| V18 | Bulk open | **Bulk load** | Dialog with CSV textarea + sample; "N valid rows" counter | ☐ |
+| V19 | Bulk parse | Edit rows | Counter updates live; invalid lines ignored | ☐ |
+| V20 | Bulk import | **Import** | Toast "N vehicles queued"; new vehicles appear as **Pending** | ☐ |
+| V21 | RC open | **Extract RC card** | Sheet with dropzone | ☐ |
+| V22 | RC upload | Drop/select an image | Preview shows; **Extract with AI** enabled | ☐ |
+| V23 | RC extract | **Extract with AI** | 3-step pipeline animates; fields returned; badge shows **GPT‑4o** (keys set) or **Mock** | ☐ |
+| V24 | RC prefill | **Use to create vehicle** | Vehicle form opens pre-filled with extracted values | ☐ |
+
+### 5e. Product Helper (eligibility) — see also §8
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| V25 | Helper tab | Open a **Truck** in a covered country → **Products** tab | Full catalogue with per-product status + legend | ☐ |
+| V26 | Order eligible | Click **Order** on an "Available" product | Toast "Ordered…"; product flips to **Existing** | ☐ |
+| V27 | Ineligible shown | Note red "Not eligible" items | Each shows a reason (country/type) | ☐ |
+
+---
+
+## 6. OBU & Devices (Toll 2.0)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| O1 | List loads | Open OBU & Devices | Table with serial, type + GNSS/DSRC tag, assigned plate tile, status | ☐ |
+| O2 | Filters | Filter status/type | List narrows accordingly | ☐ |
+| O3 | Assign | Row menu → **Assign to vehicle** (on unassigned) | Status → Active; toast | ☐ |
+| O4 | Unassign | Row menu → **Unassign** | Status → Unassigned; plate clears | ☐ |
+| O5 | Suspend/Activate | Toggle via menu | Status flips; toast | ☐ |
+| O6 | Replace | **Replace defective** | Status → Returned; toast | ☐ |
+| O7 | Persist | Perform an action → refresh | State survives reload | ☐ |
+
+---
+
+## 7. Products & Ordering (MyTolls)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| PR1 | Catalogue | Open Products → Catalogue | Product cards with category, **Eligible: types**, country chips | ☐ |
+| PR2 | Order dialog | Click **Order** on a product | Dialog: vehicle select (eligible auto-picked), qty, cost summary | ☐ |
+| PR3 | Ineligible vehicles disabled | Open dialog, expand vehicle list | Ineligible/existing vehicles disabled with "not eligible / already active" | ☐ |
+| PR4 | Place order | Choose eligible vehicle, **Place order** | Toast "Ordered…"; appears in Orders tab | ☐ |
+| PR5 | Block mode | Click **Block** (ban icon) on a product | Block dialog; any vehicle allowed; **Block product** works | ☐ |
+| PR6 | Orders tab | Open **Orders** tab | Table of orders with mode/status; sortable; paginated | ☐ |
+
+---
+
+## 8. Product eligibility matrix (new feature — test the conditions)
+
+Rules: orderable only if **product country ⊇ vehicle country** AND **product
+eligibleTypes ⊇ vehicle type**; already-owned = Existing; missing attributes = blocked.
+
+| ID | Condition | Setup | Expected | Status |
+|---|---|---|---|---|
+| E1 | Eligible truck | NL/BE/DE/FR **Truck** → **MST Card** (if not owned) | **Available** → order succeeds (201); becomes Existing | ☐ |
+| E2 | Wrong country | **NL Truck** → **HU‑GO OBU** (HU only) | **Not eligible** — "not offered in NL"; Order disabled/422 | ☐ |
+| E3 | Wrong type | **Bus** (covered country) → **HGV Levy** (Truck only) | **Not eligible** — "not available for buses" | ☐ |
+| E4 | Van limits | **Van** → **Eurovignette** (Truck/Trailer only) | Not eligible | ☐ |
+| E5 | Van allowed | **Van** in IT → **Telepass** (all classes) | Available | ☐ |
+| E6 | Existing | Order a product, reopen Helper | Same product shows **Existing** (no Order button) | ☐ |
+| E7 | Blocked by attrs | Open a **Missing attrs** vehicle → Products | All show **Complete attributes** (blocked); none orderable | ☐ |
+| E8 | Backend guard | (Dev) POST an ineligible order via console/API | Responds **422** with reason (UI can't bypass it) | ☐ |
+
+---
+
+## 9. Domains — Coverage Explorer (Toll 2.0)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| DM1 | Plate grid | Open Domains | Grid of country "plate" tiles (EU blue strip); first selected | ☐ |
+| DM2 | Select domain | Click a tile | Detail panel updates: tech (GNSS/DSRC tag), basis, applies-to, rate, corridors, assignments | ☐ |
+| DM3 | Live readout | Observe mono readout | Shows "● LIVE … settled automatically" with the chosen tech | ☐ |
+| DM4 | Status change | Click **Activate / Pending / Block** | Status badge updates; toast; persists on reload | ☐ |
+
+---
+
+## 10. Transactions (MyMST)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| T1 | List loads | Open Transactions | Table with date, plate tile, domain, location, OBU, amount, status | ☐ |
+| T2 | Search | Search plate/location | Filters (debounced) | ☐ |
+| T3 | Status filter | Filter = Exception | Only exceptions | ☐ |
+| T4 | Country filter | Filter a country | Narrows | ☐ |
+| T5 | Deep link | Dashboard → exceptions CTA | Opens Transactions filtered `status=exception` | ☐ |
+| T6 | Export CSV | **Export** | Downloads a **real .csv** of ALL matching rows (not just page); toast with count | ☐ |
+| T7 | Sort | Sort by Amount/Date | Order changes | ☐ |
+
+---
+
+## 11. Reports (MyMST)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| R1 | Catalogue | Open Reports | Report cards grouped; category tabs filter | ☐ |
+| R2 | Export CSV | Report → **Run** → **Export as CSV** | Downloads a **real .csv** with data rows; toast with row count | ☐ |
+| R3 | Export XLSX | **Export as XLSX** | Downloads a `.xls` that opens in Excel | ☐ |
+| R4 | Export PDF | **Export as PDF** | Downloads a **branded multi-page PDF** table | ☐ |
+| R5 | Scheduled | **Scheduled reports** | Informational toast (simulated — not a bug) | ☐ |
+
+---
+
+## 12. Hauliers (MyTolls)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| H1 | List | Open Hauliers | Table: company, VAT, country, contact, fleet, status | ☐ |
+| H2 | Search/filter | Search name; filter status | Narrows | ☐ |
+| H3 | Create validate | **Create haulier**, empty name, submit | Error "Name is required" | ☐ |
+| H4 | Create success | Fill + submit | Toast; appears at top; persists | ☐ |
+
+---
+
+## 13. Finance — Invoices & AR (MyMST)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| F1 | Layout | Open Finance | Consolidated invoice card (country lines, red total) + KPI tiles + invoice table | ☐ |
+| F2 | Status filter | Filter = Overdue | Only overdue invoices | ☐ |
+| F3 | Pay | Row menu → **Mark as paid** | Status → Paid; toast; persists | ☐ |
+| F4 | Dispute | Row menu → **Dispute invoice** | Status → Disputed; toast | ☐ |
+| F5 | Invoice PDF | Row menu → **Download PDF** | Real branded **invoice PDF** (net/VAT/total) downloads | ☐ |
+| F6 | Statement | **Statement** button | Real **statement PDF** downloads | ☐ |
+
+---
+
+## 14. Users & Access (Toll 2.0)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| U1 | List | Open Users & Access | Table: user, role, status, last active | ☐ |
+| U2 | Invite validate | **Invite user**, empty email, submit | Error "Email is required" | ☐ |
+| U3 | Invite | Fill + submit | Toast; user added as **Invited**; persists | ☐ |
+| U4 | Change role | Row menu → role radio | Role updates; toast; persists | ☐ |
+| U5 | Resend invite | On an invited user → **Resend invite** | Toast (simulated email) | ☐ |
+| U6 | Remove | Row menu → **Remove user** | User removed; toast; persists | ☐ |
+
+---
+
+## 15. Onboarding wizard (Toll 2.0)
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| N1 | Stepper | Open Onboarding | 5-step stepper (Company→Vehicles→Devices→Users→Review) | ☐ |
+| N2 | VAT validate ok | Enter VAT ≥ 8 chars → **Validate** | "Verified" panel with company/address; company field filled | ☐ |
+| N3 | VAT invalid | Short VAT → **Validate** | Error toast "could not be validated" | ☐ |
+| N4 | Navigation | Continue / Back through steps | Animated transitions; state retained | ☐ |
+| N5 | Submit creates entity | Complete → **Complete onboarding** | Success screen; **new entity appears in the top-bar entity switcher**; persists | ☐ |
+
+---
+
+## 16. Support / Help Center
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| SP1 | Search resources | Type in hero search | Resource cards filter; empty message if none | ☐ |
+| SP2 | Product help | Click **Product help** card | Dialog lists real product guides (catalogue) | ☐ |
+| SP3 | Country tolls | Click **Country tolls** card | Dialog lists domains with tech/rate/status | ☐ |
+| SP4 | Manuals | Click **User manuals** card | Downloads a **real PDF** manual index; toast | ☐ |
+| SP5 | Feedback | Click **Give feedback** | Scrolls to contact form | ☐ |
+| SP6 | Ticket validate | **Submit ticket** with empty subject/message | Error toasts | ☐ |
+| SP7 | Ticket create | Fill subject + message → **Submit ticket** | Toast "Ticket TKT‑…"; appears under **Your tickets**; persists | ☐ |
+
+---
+
+## 17. Account & Settings
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| AC1 | Entity tab | Account → My Entity | Fields pre-filled from selected entity (controlled) | ☐ |
+| AC2 | Save entity | Change company name → **Save changes** | Toast; top-bar entity name updates; persists | ☐ |
+| AC3 | Profile save | Profile tab, change name, save | Toast; persists (name shows in top bar avatar/menu) | ☐ |
+| AC4 | Profile email validate | Enter invalid email, save | Error "valid email" | ☐ |
+| AC5 | Password mismatch | Security: new ≠ confirm → **Update password** | Error "don't match" | ☐ |
+| AC6 | Password too short | new < 8 chars | Error "at least 8 characters" | ☐ |
+| AC7 | 2FA toggle | Toggle Two-factor | Toast; persists | ☐ |
+| AC8 | Prefs persist | Toggle email/weekly/dark | Each toasts; survive reload | ☐ |
+| AC9 | Reset demo data | Preferences → **Reset demo data** → confirm | Everything reseeds; toast | ☐ |
+
+---
+
+## 18. Cross-cutting states & error conditions
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| X1 | Loading states | Hard refresh various list pages | Skeletons/`Loading…` appear before data | ☐ |
+| X2 | Empty states | Filter any list to no results | Friendly empty state with icon | ☐ |
+| X3 | Latency realism | Watch any list load | Small artificial delay + spinners on actions | ☐ |
+| X4 | Eligibility guard | Try to order ineligible (see E-series) | Blocked in UI + 422 from API | ☐ |
+| X5 | Stale worker warning | (Dev) after code changes without refresh | Console `[MSW] Unhandled API call…`; hard refresh resolves | ☐ |
+| X6 | Responsive | Resize to mobile across modules | Tables scroll; layout stacks; nav becomes drawer | ☐ |
+| X7 | Keyboard/a11y | Tab through forms; ⌘K; Esc closes dialogs | Focus rings visible; dialogs/sheets close on Esc | ☐ |
+| X8 | Deep-link tabs | Open `/account?tab=security` | Opens on Security tab | ☐ |
+
+---
+
+## 19. RC-card AI (Azure) — targeted
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| AI1 | Mock fallback | With `.env` keys **blank**, run extraction | Returns realistic values; badge **Mock**; toast notes mock | ☐ |
+| AI2 | Live extraction | With valid Azure keys, upload a real RC-card image | GPT‑4o returns fields; badge **GPT‑4o**; confidence shown | ☐ |
+| AI3 | Health | (Dev) `GET /api/ai/health` | `{ ok:true, azureConfigured:true|false, deployment:"gpt-4o" }` | ☐ |
+| AI4 | Failure handling | Upload a non-card image with live keys | Still returns structured JSON (or graceful mock fallback), no crash | ☐ |
+
+---
+
+## 20. Portal segregation matrix (quick reference)
+
+Confirm each portal's sidebar shows **only** these (plus General = Support, Account):
+
+| Portal | Modules that MUST appear | Modules that MUST NOT appear |
+|---|---|---|
+| **MyTolls** | Vehicles, Hauliers, Products & Ordering | Dashboard, OBU, Domains, Transactions, Reports, Finance, Users, Onboarding |
+| **MyMST** | Transactions, Reports, Invoices & AR | Vehicles, Hauliers, Products, OBU, Domains, Users, Onboarding, Dashboard |
+| **Toll 2.0** | Dashboard, Vehicles, OBU & Devices, Domains, Users & Access, Onboarding | Hauliers, Products & Ordering, Transactions, Reports, Finance |
+
+---
+
+## 21. Regression smoke checklist (5-minute pass)
+
+1. ☐ Login → MFA → launcher → Toll 2.0 dashboard loads with data.
+2. ☐ Create a vehicle → it appears → refresh → still there.
+3. ☐ Open vehicle → Products tab → order an eligible product → becomes Existing.
+4. ☐ Products → attempt ineligible order → blocked with reason.
+5. ☐ Transactions → Export CSV downloads a real file.
+6. ☐ Reports → Export PDF downloads a real file.
+7. ☐ Finance → Download an invoice PDF; mark one paid.
+8. ☐ Support → submit a ticket → shows in list → refresh persists.
+9. ☐ Switch portals from the top bar; sidebar changes correctly.
+10. ☐ Switch **entity** in the top bar; Transactions/Vehicles totals change live.
+11. ☐ Account → Reset demo data restores everything.
+
+---
+
+## Notes / defect log
+
+| ID | Severity | Area | Description | Repro |
+|---|---|---|---|---|
+| | | | | |

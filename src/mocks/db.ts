@@ -66,8 +66,10 @@ export function seedData(): DBShape {
 
   const hauliers: Haulier[] = Array.from({ length: 24 }, () => {
     const country = pickCountry();
+    const entity = faker.helpers.arrayElement(entities);
     return {
       id: uid("hlr"),
+      entityId: entity.id,
       name: faker.company.name(),
       vatNumber: `${country}${faker.string.numeric(9)}`,
       country,
@@ -88,13 +90,19 @@ export function seedData(): DBShape {
       { value: "deactivated" as const, weight: 1 },
     ]);
     const created = faker.date.past({ years: 2 });
+    const entity = faker.helpers.arrayElement(entities);
+    const entityHauliers = hauliers.filter((h) => h.entityId === entity.id);
+    const owner = entityHauliers.length
+      ? faker.helpers.arrayElement(entityHauliers)
+      : faker.helpers.arrayElement(hauliers);
     return {
       id: uid("veh"),
+      entityId: entity.id,
       plate: makePlate(country),
       country,
       fleetCode: faker.helpers.maybe(() => faker.string.alpha({ length: 4, casing: "upper" }), { probability: 0.6 }) ?? "",
       mstsId: faker.string.numeric(5),
-      legalEntity: faker.helpers.arrayElement(entities).name,
+      legalEntity: entity.name,
       type: faker.helpers.arrayElement(["Truck", "Truck", "Truck", "Trailer", "Bus", "Van"]),
       euronorm: status === "missing_attributes" ? "" : faker.helpers.arrayElement(["EURO 5", "EURO 6", "EURO 6", "EURO 4"]),
       totalAxles: faker.number.int({ min: 2, max: 6 }),
@@ -102,7 +110,7 @@ export function seedData(): DBShape {
       co2Class: faker.number.int({ min: 1, max: 5 }),
       vin: faker.vehicle.vin(),
       status,
-      ownerId: faker.helpers.arrayElement(hauliers).id,
+      ownerId: owner.id,
       products: faker.helpers.arrayElements(PRODUCTS, { min: 0, max: 4 }).map((p) => p.code),
       createdAt: iso(created),
       updatedAt: iso(faker.date.between({ from: created, to: new Date("2026-06-30") })),
@@ -119,12 +127,14 @@ export function seedData(): DBShape {
       { value: "defective" as const, weight: 1 },
     ]);
     const assigned = status === "active" || status === "suspended";
+    const vehicle = assigned ? faker.helpers.arrayElement(vehicles) : null;
     return {
       id: uid("obu"),
+      entityId: vehicle?.entityId ?? faker.helpers.arrayElement(entities).id,
       serial: faker.string.numeric(12),
       type: faker.helpers.arrayElement(OBU_TYPES),
       status,
-      vehicleId: assigned ? faker.helpers.arrayElement(vehicles).id : null,
+      vehicleId: vehicle?.id ?? null,
       domains: faker.helpers.arrayElements(["DE-TollCollect", "BE-Viapass", "AT-GoMaut", "IT-Telepass", "CZ-Myto", "HU-HuGo"], { min: 1, max: 3 }),
       shipmentTracking: status === "in_transit" ? `TRK${faker.string.numeric(10)}` : null,
       installedAt: assigned ? iso(faker.date.past({ years: 1 })) : null,
@@ -161,6 +171,7 @@ export function seedData(): DBShape {
     const dom = faker.helpers.arrayElement(domains);
     return {
       id: uid("trx"),
+      entityId: v.entityId,
       date: iso(faker.date.recent({ days: 90 })),
       vehiclePlate: v.plate,
       obuSerial: faker.helpers.maybe(() => faker.helpers.arrayElement(obus).serial, { probability: 0.7 }) ?? null,
@@ -185,6 +196,7 @@ export function seedData(): DBShape {
     const amount = faker.number.float({ min: 1800, max: 42000, fractionDigits: 2 });
     return {
       id: uid("inv"),
+      entityId: entities[i % entities.length].id,
       number: `MST-2026-${String(1042 - i).padStart(5, "0")}`,
       period: issued.toLocaleDateString("en-GB", { month: "long", year: "numeric" }),
       issuedAt: iso(issued),
@@ -217,6 +229,7 @@ export function seedData(): DBShape {
     const created = faker.date.recent({ days: 120 });
     return {
       id: uid("ord"),
+      entityId: v.entityId,
       reference: `ORD-${faker.string.numeric(6)}`,
       productCode: p.code,
       productName: p.name,

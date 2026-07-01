@@ -135,7 +135,7 @@ export default function SupportPage() {
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search help articles…"
-              className="bg-white pl-9 text-foreground"
+              className="bg-white pl-9 text-shell-ink placeholder:text-slate-400"
             />
           </div>
         </CardContent>

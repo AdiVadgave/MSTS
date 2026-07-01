@@ -45,17 +45,20 @@ export default function LoginPage() {
         <>Protected by two-factor authentication · MSTS One prototype</>
       }
     >
-      <form onSubmit={submit} className="space-y-4">
+      {/* autoComplete off so the browser doesn't override/obscure the
+          pre-filled, editable demo values with its own autofill. */}
+      <form onSubmit={submit} className="space-y-4" autoComplete="off">
         <Field label="Email">
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="email"
               autoFocus
+              autoComplete="off"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@company.eu"
-              className="bg-white pl-9 text-foreground"
+              className="bg-white pl-9 text-shell-ink placeholder:text-slate-400"
             />
           </div>
         </Field>
@@ -64,10 +67,11 @@ export default function LoginPage() {
             <Lock className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="bg-white pl-9 text-foreground"
+              className="bg-white pl-9 text-shell-ink placeholder:text-slate-400"
             />
           </div>
         </Field>

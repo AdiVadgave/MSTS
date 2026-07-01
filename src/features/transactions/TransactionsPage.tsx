@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { useTransactions } from "@/hooks/api";
 import { useDebounced } from "@/hooks/useDebounced";
 import { api, buildQuery } from "@/lib/api";
+import { useAppStore } from "@/app/store";
 import { downloadCSV } from "@/lib/download";
 import { COUNTRIES } from "@/mocks/catalog";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -30,6 +31,7 @@ export default function TransactionsPage() {
   const [sort, setSort] = React.useState("-date");
 
   const [exporting, setExporting] = React.useState(false);
+  const entityId = useAppStore().entity?.id;
 
   const { data, isLoading } = useTransactions({
     q: debouncedQ,
@@ -45,7 +47,7 @@ export default function TransactionsPage() {
     setExporting(true);
     try {
       const all = await api.get<Paginated<Transaction>>(
-        `/api/transactions${buildQuery({ q: debouncedQ, status, country, sort, page: 1, pageSize: 5000 })}`
+        `/api/transactions${buildQuery({ q: debouncedQ, status, country, sort, page: 1, pageSize: 5000, entityId })}`
       );
       downloadCSV(
         `transactions-${new Date().toISOString().slice(0, 10)}.csv`,
