@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MSTS Tolls — One box. Every road in Europe.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --shell-yellow:#FBCE07;
+    --shell-yellow-deep:#F0B800;
+    --shell-red:#DD1D21;
+    --asphalt:#161310;
+    --asphalt-2:#211D18;
+    --asphalt-line:#332d25;
+    --paper:#FAF7F0;
+    --paper-2:#F1ECE0;
+    --ink:#1A1712;
+    --grey:#6B6459;
+    --sign-blue:#1B3A8B;
+    --ok:#3FB984;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Inter",system-ui,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.display{font-family:"Archivo",sans-serif;letter-spacing:-.02em;line-height:.98}
+  .mono{font-family:"JetBrains Mono",monospace}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+  .eyebrow{
+    font-family:"JetBrains Mono",monospace;font-size:.72rem;font-weight:500;
+    letter-spacing:.22em;text-transform:uppercase;color:var(--grey);
+  }
+
+  /* ---------- NAV ---------- */
+  nav{
+    position:sticky;top:0;z-index:60;
+    background:rgba(250,247,240,.82);backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(0,0,0,.08);
+  }
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:66px}
+  .brand{display:flex;align-items:center;gap:11px;font-family:"Archivo";font-weight:800;font-size:1.05rem;letter-spacing:-.01em}
+  .mark{
+    width:30px;height:30px;border-radius:7px;flex:none;
+    background:var(--shell-yellow);position:relative;
+    box-shadow:inset 0 0 0 2px var(--ink);
+  }
+  .mark::after{content:"";position:absolute;inset:7px 7px auto 7px;height:6px;background:var(--shell-red);border-radius:2px}
+  .mark::before{content:"";position:absolute;inset:auto 7px 7px 7px;height:6px;background:var(--ink);border-radius:2px}
+  .brand small{font-family:"JetBrains Mono";font-weight:500;font-size:.62rem;letter-spacing:.14em;color:var(--grey);text-transform:uppercase}
+  .nav-links{display:flex;align-items:center;gap:30px;font-size:.92rem;font-weight:500}
+  .nav-links a.n{color:var(--grey);transition:color .18s}
+  .nav-links a.n:hover{color:var(--ink)}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;font-family:"Archivo";font-weight:700;
+    font-size:.9rem;padding:11px 20px;border-radius:9px;cursor:pointer;border:none;transition:transform .12s, background .18s;
+  }
+  .btn-red{background:var(--shell-red);color:#fff}
+  .btn-red:hover{background:#c4181c;transform:translateY(-1px)}
+  .btn-dark{background:var(--ink);color:var(--paper)}
+  .btn-dark:hover{transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px rgba(0,0,0,.16)}
+  .btn-ghost:hover{box-shadow:inset 0 0 0 2px var(--ink)}
+  @media(max-width:820px){.nav-links a.n{display:none}}
+
+  /* ---------- HERO ---------- */
+  .hero{background:var(--shell-yellow);position:relative;overflow:hidden;padding:78px 0 0}
+  .hero::before{
+    content:"";position:absolute;inset:0;opacity:.5;pointer-events:none;
+    background:repeating-linear-gradient(90deg,transparent 0 78px,rgba(0,0,0,.045) 78px 80px);
+  }
+  .hero-in{position:relative;z-index:2}
+  .hero h1{font-size:clamp(2.9rem,8vw,6.1rem);font-weight:900;color:var(--ink);max-width:14ch}
+  .hero h1 .r{color:var(--shell-red)}
+  .hero p.lede{max-width:52ch;margin:26px 0 32px;font-size:1.12rem;color:#4a3f22;font-weight:500}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:56px}
+  /* signage ticker */
+  .ticker{
+    position:relative;border-top:3px solid var(--ink);border-bottom:3px solid var(--ink);
+    background:var(--ink);overflow:hidden;padding:0;
+  }
+  .ticker-track{display:flex;gap:0;width:max-content;animation:scroll 34s linear infinite}
+  .sign{
+    display:flex;align-items:center;gap:14px;padding:15px 26px;
+    border-right:1px solid var(--asphalt-line);white-space:nowrap;
+  }
+  .sign .cc{font-family:"Archivo";font-weight:900;font-size:1.15rem;color:var(--shell-yellow)}
+  .sign .er{font-family:"JetBrains Mono";font-size:.78rem;color:#9a9184;letter-spacing:.05em}
+  .sign .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+  @keyframes scroll{to{transform:translateX(-50%)}}
+
+  /* ---------- STATS ---------- */
+  .stats{background:var(--ink);color:var(--paper);padding:0 0 4px}
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+  .stat{padding:40px 26px;border-right:1px solid var(--asphalt-line)}
+  .stat:last-child{border-right:none}
+  .stat .num{font-family:"Archivo";font-weight:900;font-size:2.7rem;color:var(--shell-yellow);line-height:1}
+  .stat .lbl{font-size:.86rem;color:#a79f92;margin-top:8px}
+  @media(max-width:720px){.stats-grid{grid-template-columns:repeat(2,1fr)}.stat:nth-child(2){border-right:none}}
+
+  /* ---------- SECTION BASE ---------- */
+  section{padding:96px 0}
+  .sec-head{max-width:60ch;margin-bottom:52px}
+  .sec-head h2{font-size:clamp(2rem,4.5vw,3.2rem);font-weight:800;margin:16px 0 0}
+
+  /* ---------- PROBLEM ---------- */
+  .problem{background:var(--paper-2)}
+  .prob-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .prob{background:var(--paper);border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:28px 26px;position:relative}
+  .prob .k{font-family:"JetBrains Mono";font-size:.72rem;letter-spacing:.14em;color:var(--shell-red);text-transform:uppercase;font-weight:700}
+  .prob h3{font-size:1.28rem;font-weight:800;margin:14px 0 8px}
+  .prob p{color:var(--grey);font-size:.96rem}
+  @media(max-width:720px){.prob-grid{grid-template-columns:1fr}}
+
+  /* ---------- COVERAGE EXPLORER (SIGNATURE) ---------- */
+  .cover{background:var(--asphalt);color:var(--paper);position:relative;overflow:hidden}
+  .cover::before{
+    content:"";position:absolute;top:0;left:0;right:0;height:4px;
+    background:repeating-linear-gradient(90deg,var(--shell-yellow) 0 44px,transparent 44px 84px);
+  }
+  .cover .sec-head h2{color:var(--paper)}
+  .cover .eyebrow{color:var(--shell-yellow)}
+  .explorer{display:grid;grid-template-columns:1.15fr 1fr;gap:36px;align-items:start}
+  .plate-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .plate{
+    position:relative;background:var(--asphalt-2);border:1px solid var(--asphalt-line);
+    border-radius:8px;padding:12px 8px 10px;cursor:pointer;text-align:center;
+    transition:transform .12s, border-color .18s, background .18s;overflow:hidden;
+  }
+  .plate .eu{position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--sign-blue)}
+  .plate .cc{font-family:"Archivo";font-weight:900;font-size:1.35rem;line-height:1;color:var(--paper)}
+  .plate .nm{font-size:.62rem;color:#8f8778;margin-top:6px;text-transform:uppercase;letter-spacing:.04em}
+  .plate:hover{transform:translateY(-2px);border-color:#6b6252}
+  .plate.active{background:var(--shell-yellow);border-color:var(--shell-yellow)}
+  .plate.active .cc{color:var(--ink)}
+  .plate.active .nm{color:#5c4e12}
+  .plate:focus-visible{outline:3px solid var(--shell-red);outline-offset:2px}
+  @media(max-width:560px){.plate-grid{grid-template-columns:repeat(4,1fr)}}
+
+  .detail{background:var(--asphalt-2);border:1px solid var(--asphalt-line);border-radius:16px;padding:30px 28px;position:sticky;top:88px}
+  .detail .dc{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .detail .dc .big{
+    font-family:"Archivo";font-weight:900;font-size:2rem;background:var(--shell-yellow);color:var(--ink);
+    padding:6px 14px;border-radius:8px;line-height:1;
+  }
+  .detail .dc .cn{font-family:"Archivo";font-weight:800;font-size:1.5rem}
+  .detail .dc .cs{font-size:.82rem;color:#9a9184;margin-top:2px}
+  .drow{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-top:1px solid var(--asphalt-line);font-size:.92rem}
+  .drow .dl{color:#9a9184}
+  .drow .dv{font-weight:600;text-align:right}
+  .tag{display:inline-block;font-family:"JetBrains Mono";font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:5px}
+  .tag.gnss{background:rgba(63,185,132,.16);color:#5fd6a3}
+  .tag.dsrc{background:rgba(251,206,7,.16);color:var(--shell-yellow)}
+  .txn{margin-top:22px;background:var(--asphalt);border-radius:10px;padding:14px 16px;font-family:"JetBrains Mono";font-size:.78rem;color:#b7ae9f}
+  .txn .g{color:var(--ok)}
+  .txn .y{color:var(--shell-yellow)}
+  @media(max-width:860px){.explorer{grid-template-columns:1fr}.detail{position:relative;top:0}}
+
+  /* ---------- HOW IT WORKS ---------- */
+  .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .step{border-top:4px solid var(--ink);padding-top:22px}
+  .step .no{font-family:"Archivo";font-weight:900;font-size:3.2rem;color:var(--shell-yellow);-webkit-text-stroke:2px var(--ink);line-height:1}
+  .step h3{font-size:1.3rem;font-weight:800;margin:12px 0 8px}
+  .step p{color:var(--grey);font-size:.96rem}
+  @media(max-width:720px){.how-grid{grid-template-columns:1fr;gap:34px}}
+
+  /* ---------- PORTAL ---------- */
+  .portal{background:var(--ink);color:var(--paper)}
+  .portal .sec-head h2{color:var(--paper)}
+  .portal .eyebrow{color:var(--shell-yellow)}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+  .invoice{background:var(--paper);color:var(--ink);border-radius:16px;padding:26px 26px 20px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5)}
+  .inv-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:6px}
+  .inv-top .t{font-family:"Archivo";font-weight:800;font-size:1.1rem}
+  .inv-top .m{font-family:"JetBrains Mono";font-size:.72rem;color:var(--grey)}
+  .inv-row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(0,0,0,.08);font-size:.9rem}
+  .inv-row .c{display:flex;align-items:center;gap:9px}
+  .inv-row .flag{font-family:"Archivo";font-weight:900;font-size:.8rem;background:var(--ink);color:var(--shell-yellow);padding:2px 7px;border-radius:4px}
+  .inv-row .amt{font-family:"JetBrains Mono";font-weight:500}
+  .inv-total{display:flex;justify-content:space-between;padding-top:14px;margin-top:4px;font-family:"Archivo";font-weight:800;font-size:1.15rem}
+  .inv-total .amt{color:var(--shell-red)}
+  .plist{list-style:none}
+  .plist li{padding:16px 0;border-top:1px solid var(--asphalt-line);display:flex;gap:14px}
+  .plist li:first-child{border-top:none}
+  .plist .ic{flex:none;width:34px;height:34px;border-radius:8px;background:var(--shell-yellow);color:var(--ink);display:grid;place-items:center;font-family:"Archivo";font-weight:900}
+  .plist h3{font-size:1.05rem;font-weight:700;margin-bottom:3px}
+  .plist p{color:#a79f92;font-size:.92rem}
+  @media(max-width:820px){.pgrid{grid-template-columns:1fr;gap:30px}}
+
+  /* ---------- CTA ---------- */
+  .cta{background:var(--shell-yellow);position:relative;overflow:hidden}
+  .cta::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 78px,rgba(0,0,0,.045) 78px 80px);opacity:.6}
+  .cta-in{position:relative;z-index:2;text-align:center}
+  .cta h2{font-size:clamp(2.1rem,5vw,3.6rem);font-weight:900;color:var(--ink);max-width:18ch;margin:0 auto 20px}
+  .cta p{color:#4a3f22;font-weight:500;max-width:48ch;margin:0 auto 30px}
+  .cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+  /* ---------- FOOTER ---------- */
+  footer{background:var(--asphalt);color:#9a9184;padding:60px 0 34px;font-size:.86rem}
+  .foot-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;padding-bottom:34px;border-bottom:1px solid var(--asphalt-line)}
+  .foot-col h4{font-family:"Archivo";color:var(--paper);font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+  .foot-col a{display:block;color:#9a9184;padding:5px 0;transition:color .15s}
+  .foot-col a:hover{color:var(--shell-yellow)}
+  .disc{margin-top:26px;font-size:.72rem;line-height:1.6;color:#6f675b;max-width:80ch}
+  .concept{margin-top:18px;font-family:"JetBrains Mono";font-size:.72rem;color:var(--shell-yellow);border:1px dashed var(--asphalt-line);border-radius:8px;padding:12px 14px;display:inline-block}
+
+  /* reveal */
+  .rv{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease}
+  .rv.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){
+    .ticker-track{animation:none}
+    .rv{opacity:1;transform:none;transition:none}
+    html{scroll-behavior:auto}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-in">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      MSTS Tolls <small>by Shell</small>
+    </div>
+    <div class="nav-links">
+      <a class="n" href="#problem">Why one box</a>
+      <a class="n" href="#coverage">Coverage</a>
+      <a class="n" href="#how">How it works</a>
+      <a class="n" href="#portal">The portal</a>
+      <button class="btn btn-red" onclick="document.getElementById('cta').scrollIntoView()">Order units</button>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="wrap hero-in">
+    <p class="eyebrow">European Electronic Toll Service · EETS registered</p>
+    <h1 style="margin-top:18px">One box.<br>One invoice.<br>Every <span class="r">toll road</span> in Europe.</h1>
+    <p class="lede">Stop running a glovebox full of national toll units. A single MSTS on-board unit clears motorway tolls, bridges and tunnels across 20 countries — reconciled onto one monthly invoice, in one currency, from one partner.</p>
+    <div class="hero-cta">
+      <button class="btn btn-red" onclick="document.getElementById('cta').scrollIntoView()">Order on-board units →</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('coverage').scrollIntoView()">See where it works</button>
+    </div>
+  </div>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track" id="ticker"></div>
+  </div>
+</header>
+
+<!-- STATS -->
+<section class="stats" style="padding:0">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat"><div class="num">20</div><div class="lbl">Countries on one unit</div></div>
+      <div class="stat"><div class="num">200k+</div><div class="lbl">km of tolled road covered</div></div>
+      <div class="stat"><div class="num">140+</div><div class="lbl">Toll operators reconciled</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">Invoice, every month</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEM -->
+<section class="problem" id="problem">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow">The problem</p>
+      <h2>Europe's toll map was built to be complicated.</h2>
+    </div>
+    <div class="prob-grid">
+      <div class="prob rv"><div class="k">Fragmentation</div><h3>A different contract in every country</h3><p>Over 140 toll chargers and government agencies, each with its own registration, deposit, top-up rules and support line. Cross three borders and you're managing three relationships before lunch.</p></div>
+      <div class="prob rv"><div class="k">Incompatible tech</div><h3>GNSS and DSRC don't talk</h3><p>Some countries charge by satellite-tracked distance, others by microwave gantry. Country-specific boxes pile up on the windscreen — and one wrong unit means a missed charge and a fine.</p></div>
+      <div class="prob rv"><div class="k">Admin drag</div><h3>Reconciliation eats your week</h3><p>Statements arrive in different formats, languages and cycles. Matching toll spend back to vehicles and jobs is manual, slow, and where margin quietly leaks away.</p></div>
+      <div class="prob rv"><div class="k">Compliance risk</div><h3>Fines you can't read</h3><p>Penalty notices land in languages your team doesn't speak, on deadlines you didn't see. Missed CO₂ class evidence puts every truck in the most expensive band by default.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- COVERAGE EXPLORER -->
+<section class="cover" id="coverage">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow">Coverage explorer</p>
+      <h2>Pick a country. See exactly what your box handles.</h2>
+    </div>
+    <div class="explorer">
+      <div class="plate-grid" id="plates" role="listbox" aria-label="Toll domains"></div>
+      <div class="detail" id="detail" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow">From box to border in three steps</p>
+      <h2>Set up once. Then just drive.</h2>
+    </div>
+    <div class="how-grid">
+      <div class="step rv"><div class="no">01</div><h3>Order your units</h3><p>Tell us your fleet and routes through the portal. Units ship pre-provisioned for every country you drive — no per-country sign-ups.</p></div>
+      <div class="step rv"><div class="no">02</div><h3>Fit and go</h3><p>The 4G unit self-installs in minutes or hardwires for good. Over-the-air updates keep it current as toll rules and new countries come online.</p></div>
+      <div class="step rv"><div class="no">03</div><h3>Cross borders freely</h3><p>One device switches automatically between GNSS and DSRC tolling. Drivers pass through; charges flow straight to your consolidated invoice.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- PORTAL -->
+<section class="portal" id="portal">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="eyebrow">The portal</p>
+      <h2>Every charge, every truck, one screen.</h2>
+    </div>
+    <div class="pgrid">
+      <div class="invoice rv">
+        <div class="inv-top">
+          <div><div class="t">Consolidated toll invoice</div><div class="m">FLEET-4471 · March 2026</div></div>
+          <div class="m" style="text-align:right">18 vehicles<br>6 countries</div>
+        </div>
+        <div class="inv-row"><div class="c"><span class="flag">D</span> Germany · LKW-Maut</div><div class="amt">€ 4,218.40</div></div>
+        <div class="inv-row"><div class="c"><span class="flag">F</span> France · TIS-PL</div><div class="amt">€ 2,905.10</div></div>
+        <div class="inv-row"><div class="c"><span class="flag">A</span> Austria · GO-Maut</div><div class="amt">€ 1,447.80</div></div>
+        <div class="inv-row"><div class="c"><span class="flag">PL</span> Poland · e-TOLL</div><div class="amt">€ 984.25</div></div>
+        <div class="inv-row"><div class="c"><span class="flag">I</span> Italy · Telepass</div><div class="amt">€ 762.00</div></div>
+        <div class="inv-total"><div>Total due</div><div class="amt">€ 10,317.55</div></div>
+      </div>
+      <ul class="plist">
+        <li class="rv"><span class="ic">≡</span><div><h3>One invoice, split any way you need</h3><p>Consolidate everything, or break spend down by vehicle, driver, route or cost centre for clean job costing.</p></div></li>
+        <li class="rv"><span class="ic">◎</span><div><h3>Live transaction feed</h3><p>See tolls land as they happen, matched to plate and country — no waiting for month-end statements.</p></div></li>
+        <li class="rv"><span class="ic">CO₂</span><div><h3>CO₂ class management</h3><p>Upload registration evidence once and we claim the lower emissions band for every eligible vehicle in Germany and beyond.</p></div></li>
+        <li class="rv"><span class="ic">⇄</span><div><h3>Built to plug in</h3><p>Push toll data straight into your TMS or ERP over API. No re-keying, no CSV shuffling.</p></div></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="cta">
+  <div class="wrap cta-in">
+    <p class="eyebrow" style="text-align:center;color:#4a3f22">Ready when you are</p>
+    <h2 style="margin-top:16px">Clear every toll in Europe from one box.</h2>
+    <p>Tell us your fleet size and the borders you cross. We'll ship pre-provisioned units and have you tolling across the continent within days.</p>
+    <div class="cta-btns">
+      <button class="btn btn-red">Order on-board units →</button>
+      <button class="btn btn-dark">Talk to fleet sales</button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="brand" style="color:var(--paper)">
+        <span class="mark" aria-hidden="true"></span> MSTS Tolls <small>by Shell</small>
+      </div>
+      <div class="foot-col"><h4>Product</h4><a href="#coverage">Coverage</a><a href="#portal">Fleet portal</a><a href="#">On-board units</a><a href="#">API & integrations</a></div>
+      <div class="foot-col"><h4>Fleets</h4><a href="#how">How it works</a><a href="#">CO₂ class help</a><a href="#">Eurovignette</a><a href="#">Support</a></div>
+      <div class="foot-col"><h4>Company</h4><a href="#">About MSTS Tolls</a><a href="#">Shell CRT</a><a href="#">Careers</a><a href="#">Contact</a></div>
+    </div>
+    <p class="disc">MSTS Tolls is presented here as part of Shell's Commercial Road Transport offering. Companies in which Shell plc directly and indirectly owns investments are separate legal entities. In this material "Shell" and "MSTS Tolls" may be used for convenience where references are made to entities within the group in general. Coverage, toll schemes, technologies and sample rates shown are illustrative.</p>
+    <div class="concept">◆ Concept mockup — not an official Shell page. Logo shown is a placeholder; the Shell Pecten would be dropped in on the real build.</div>
+  </div>
+</footer>
+
+<script>
+  // ---- Toll domain data (illustrative) ----
+  const DOMAINS = [
+    {cc:"D", name:"Germany", scheme:"LKW-Maut (Toll Collect)", tech:"GNSS", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.19–0.35 / km", er:"E40 · E45"},
+    {cc:"F", name:"France", scheme:"TIS-PL", tech:"DSRC", basis:"Distance (gantry)", weight:"≥ 3.5 t", rate:"€0.20–0.28 / km", er:"E15 · E70"},
+    {cc:"E", name:"Spain", scheme:"VIA-T", tech:"DSRC", basis:"Distance", weight:"All classes", rate:"€0.12–0.22 / km", er:"E5 · E90"},
+    {cc:"I", name:"Italy", scheme:"Telepass", tech:"DSRC", basis:"Distance", weight:"All classes", rate:"€0.10–0.26 / km", er:"E35 · E45"},
+    {cc:"A", name:"Austria", scheme:"GO-Maut (Asfinag)", tech:"DSRC", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.23–0.45 / km", er:"E60 · E55"},
+    {cc:"B", name:"Belgium", scheme:"Viapass", tech:"GNSS", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.11–0.29 / km", er:"E19 · E40"},
+    {cc:"PL", name:"Poland", scheme:"e-TOLL", tech:"GNSS", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.07–0.15 / km", er:"E30 · E75"},
+    {cc:"P", name:"Portugal", scheme:"Via Verde", tech:"DSRC", basis:"Distance", weight:"All classes", rate:"€0.09–0.20 / km", er:"E1 · E80"},
+    {cc:"CH", name:"Switzerland", scheme:"LSVA", tech:"GNSS", basis:"Distance × weight", weight:"≥ 3.5 t", rate:"CHF-based", er:"E35 · E60"},
+    {cc:"H", name:"Hungary", scheme:"HU-GO", tech:"GNSS", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.10–0.18 / km", er:"E60 · E71"},
+    {cc:"BG", name:"Bulgaria", scheme:"Toll BG", tech:"GNSS", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.05–0.14 / km", er:"E79 · E83"},
+    {cc:"SLO", name:"Slovenia", scheme:"DarsGo", tech:"DSRC", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.16–0.31 / km", er:"E57 · E70"},
+    {cc:"SK", name:"Slovakia", scheme:"SkyToll", tech:"GNSS", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.08–0.20 / km", er:"E58 · E75"},
+    {cc:"CZ", name:"Czechia", scheme:"MYTO CZ", tech:"DSRC", basis:"Distance", weight:"≥ 3.5 t", rate:"€0.11–0.24 / km", er:"E50 · E65"},
+    {cc:"DK", name:"Denmark", scheme:"Storebælt / Øresund", tech:"DSRC", basis:"Per crossing", weight:"All classes", rate:"Per bridge", er:"E20 · E47"},
+  ];
+
+  const detailEl = document.getElementById('detail');
+  const platesEl = document.getElementById('plates');
+
+  function render(d){
+    const techClass = d.tech === "GNSS" ? "gnss" : "dsrc";
+    const techNote = d.tech === "GNSS" ? "Satellite / distance" : "Microwave gantry";
+    detailEl.innerHTML = `
+      <div class="dc">
+        <span class="big">${d.cc}</span>
+        <div><div class="cn">${d.name}</div><div class="cs">${d.scheme}</div></div>
+      </div>
+      <div class="drow"><span class="dl">Technology</span><span class="dv"><span class="tag ${techClass}">${d.tech}</span> · ${techNote}</span></div>
+      <div class="drow"><span class="dl">Charging basis</span><span class="dv">${d.basis}</span></div>
+      <div class="drow"><span class="dl">Applies to</span><span class="dv">${d.weight}</span></div>
+      <div class="drow"><span class="dl">Typical rate</span><span class="dv">${d.rate}</span></div>
+      <div class="drow"><span class="dl">Main corridors</span><span class="dv">${d.er}</span></div>
+      <div class="txn">
+        <span class="g">●</span> LIVE &nbsp; ${d.cc}-toll matched<br>
+        plate <span class="y">MSTS·4471·07</span> → invoice FLEET-4471<br>
+        mode <span class="y">${d.tech}</span> · settled automatically
+      </div>`;
+  }
+
+  DOMAINS.forEach((d,i)=>{
+    const b = document.createElement('button');
+    b.className = 'plate' + (i===0 ? ' active':'');
+    b.setAttribute('role','option');
+    b.setAttribute('aria-label', d.name + ' — ' + d.scheme);
+    b.innerHTML = `<span class="eu" aria-hidden="true"></span><span class="cc">${d.cc}</span><span class="nm">${d.name}</span>`;
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('.plate').forEach(p=>p.classList.remove('active'));
+      b.classList.add('active');
+      render(d);
+    });
+    platesEl.appendChild(b);
+  });
+  render(DOMAINS[0]);
+
+  // ---- Signage ticker ----
+  const track = document.getElementById('ticker');
+  const set = DOMAINS.concat(DOMAINS); // duplicate for seamless loop
+  set.forEach(d=>{
+    const s = document.createElement('div');
+    s.className='sign';
+    s.innerHTML = `<span class="dot"></span><span class="cc">${d.cc}</span><span class="er">${d.er}</span>`;
+    track.appendChild(s);
+  });
+
+  // ---- Scroll reveal ----
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target);} });
+  },{threshold:.14});
+  document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>

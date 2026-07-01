@@ -1,0 +1,179 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Shell "highway signage" palette ─────────────────────────
+       paper #FAF7F0 · ink #1A1712 · red #DD1D21 · yellow #FBCE07
+       asphalt #161310 · grey #6B6459 · sign-blue #1B3A8B          */
+    --background: 40 33% 96%;      /* paper */
+    --foreground: 36 18% 9%;       /* ink */
+
+    --card: 40 40% 99%;
+    --card-foreground: 36 18% 9%;
+
+    --popover: 40 40% 99%;
+    --popover-foreground: 36 18% 9%;
+
+    /* Action color is Shell red */
+    --primary: 359 76% 49%;
+    --primary-foreground: 40 40% 98%;
+
+    --secondary: 40 30% 91%;       /* paper-2 */
+    --secondary-foreground: 36 20% 16%;
+
+    --muted: 40 30% 91%;
+    --muted-foreground: 37 9% 40%; /* grey */
+
+    --accent: 48 100% 90%;         /* pale yellow */
+    --accent-foreground: 36 40% 15%;
+
+    --destructive: 359 76% 49%;
+    --destructive-foreground: 40 40% 98%;
+
+    --success: 152 49% 42%;
+    --success-foreground: 40 40% 98%;
+
+    --warning: 44 96% 48%;
+    --warning-foreground: 36 40% 12%;
+
+    --info: 221 66% 33%;           /* sign-blue */
+    --info-foreground: 40 40% 98%;
+
+    --border: 36 16% 85%;
+    --input: 36 16% 85%;
+    --ring: 359 76% 49%;
+
+    --radius: 0.6rem;
+
+    /* Sidebar = asphalt with yellow highlight */
+    --sidebar: 30 16% 7%;
+    --sidebar-foreground: 40 18% 80%;
+    --sidebar-muted: 36 8% 52%;
+    --sidebar-active: 49 96% 51%;  /* Shell yellow */
+    --sidebar-border: 34 18% 16%;
+  }
+
+  .dark {
+    --background: 30 16% 7%;       /* asphalt */
+    --foreground: 40 20% 92%;
+    --card: 33 15% 12%;            /* asphalt-2 */
+    --card-foreground: 40 20% 92%;
+    --popover: 33 15% 12%;
+    --popover-foreground: 40 20% 92%;
+    --primary: 359 80% 55%;
+    --primary-foreground: 40 40% 98%;
+    --secondary: 34 14% 17%;
+    --secondary-foreground: 40 20% 88%;
+    --muted: 34 14% 17%;
+    --muted-foreground: 36 10% 60%;
+    --accent: 40 30% 18%;
+    --accent-foreground: 49 96% 60%;
+    --destructive: 359 80% 55%;
+    --destructive-foreground: 40 40% 98%;
+    --success: 152 49% 46%;
+    --success-foreground: 40 40% 98%;
+    --warning: 44 96% 52%;
+    --warning-foreground: 36 40% 10%;
+    --info: 221 70% 60%;
+    --info-foreground: 40 40% 98%;
+    --border: 34 18% 18%;
+    --input: 34 18% 20%;
+    --ring: 359 80% 55%;
+    --sidebar: 30 18% 5%;
+    --sidebar-foreground: 40 18% 78%;
+    --sidebar-muted: 36 8% 48%;
+    --sidebar-active: 49 96% 51%;
+    --sidebar-border: 34 18% 14%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  /* Editorial headings — Archivo, tight, heavy */
+  h1, h2, h3, .font-display {
+    font-family: "Archivo", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+    border: 3px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  /* Mono "signage" eyebrow label */
+  .eyebrow {
+    @apply font-mono text-[0.7rem] font-medium uppercase tracking-[0.2em] text-muted-foreground;
+  }
+}
+
+@layer utilities {
+  .sidebar-bg {
+    background: hsl(var(--sidebar));
+    color: hsl(var(--sidebar-foreground));
+  }
+  /* Faint vertical "ruler" lines like motorway signage */
+  .ruler-bg {
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent 0 78px,
+      rgba(0, 0, 0, 0.045) 78px 80px
+    );
+  }
+  .glass {
+    background: hsl(var(--background) / 0.82);
+    backdrop-filter: blur(10px);
+  }
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--muted-foreground) / 0.08),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
