@@ -150,7 +150,14 @@ export default function FinancePage() {
         title="Invoices & AR"
         description="One consolidated toll invoice per period — split any way you need."
         badge={<SourceTag source="MyMST" />}
-        actions={<Button variant="outline"><Download /> Statement</Button>}
+        actions={
+          <Button
+            variant="outline"
+            onClick={() => toast.success("Account statement downloaded", { description: "statement-FLEET-4471.pdf" })}
+          >
+            <Download /> Statement
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1.1fr] lg:items-stretch">

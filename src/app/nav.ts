@@ -23,6 +23,8 @@ export interface NavItem {
   sources: SourcePortal[];
   keywords?: string[];
   description?: string;
+  /** Cross-cutting modules available inside every portal. */
+  global?: boolean;
 }
 
 export interface NavGroup {
@@ -156,20 +158,42 @@ export const NAV: NavGroup[] = [
         label: "Support",
         to: "/support",
         icon: LifeBuoy,
-        sources: ["Toll2.0"],
+        sources: ["MyTolls", "MyMST", "Toll2.0"],
         keywords: ["help", "manual", "feedback", "country tolls", "contact"],
         description: "Help center & resources",
+        global: true,
       },
       {
         label: "Account",
         to: "/account",
         icon: Settings,
-        sources: ["MyTolls", "Toll2.0"],
+        sources: ["MyTolls", "MyMST", "Toll2.0"],
         keywords: ["my entity", "company", "password", "security", "profile"],
         description: "Company & account settings",
+        global: true,
       },
     ],
   },
 ];
 
 export const ALL_NAV_ITEMS: NavItem[] = NAV.flatMap((g) => g.items);
+
+/**
+ * Nav groups scoped to a single portal: only modules that originated in
+ * (or are shared with) that portal, excluding cross-cutting global items.
+ * Global modules (Support, Account) are returned as a separate "General"
+ * group so every portal can reach them without blurring segregation.
+ */
+export function navForPortal(portal: SourcePortal): NavGroup[] {
+  const scoped = NAV.map((group) => ({
+    label: group.label,
+    items: group.items.filter(
+      (item) => !item.global && item.sources.includes(portal)
+    ),
+  })).filter((group) => group.items.length > 0);
+
+  const globals = ALL_NAV_ITEMS.filter((item) => item.global);
+  if (globals.length) scoped.push({ label: "General", items: globals });
+
+  return scoped;
+}

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useSearchParams } from "react-router-dom";
 import { Building, User as UserIcon, Lock, Bell, Save, Palette } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SourceTag } from "@/components/common/SourceTag";
@@ -13,10 +14,16 @@ import { useEntities } from "@/hooks/api";
 import { useAppStore } from "@/app/store";
 import { toast } from "sonner";
 
+const TABS = ["entity", "profile", "security", "prefs"];
+
 export default function AccountPage() {
   const { data: entities } = useEntities();
   const { theme, toggleTheme } = useAppStore();
   const entity = entities?.[0];
+  const [params, setParams] = useSearchParams();
+  const tab = TABS.includes(params.get("tab") ?? "") ? params.get("tab")! : "entity";
+  const [emailNotifs, setEmailNotifs] = React.useState(true);
+  const [weeklySummary, setWeeklySummary] = React.useState(false);
 
   return (
     <div className="space-y-6">
@@ -27,7 +34,7 @@ export default function AccountPage() {
         badge={<SourceTag source="MyTolls" />}
       />
 
-      <Tabs defaultValue="entity">
+      <Tabs value={tab} onValueChange={(v) => setParams({ tab: v }, { replace: true })}>
         <TabsList>
           <TabsTrigger value="entity"><Building /> My Entity</TabsTrigger>
           <TabsTrigger value="profile"><UserIcon /> Profile</TabsTrigger>
@@ -104,9 +111,27 @@ export default function AccountPage() {
                 onChange={toggleTheme}
               />
               <Separator />
-              <PrefRow icon={<Bell className="size-4" />} title="Email notifications" desc="Invoices, alerts and shipment updates." checked onChange={() => {}} />
+              <PrefRow
+                icon={<Bell className="size-4" />}
+                title="Email notifications"
+                desc="Invoices, alerts and shipment updates."
+                checked={emailNotifs}
+                onChange={(v) => {
+                  setEmailNotifs(v);
+                  toast.success(v ? "Email notifications on" : "Email notifications off");
+                }}
+              />
               <Separator />
-              <PrefRow icon={<Bell className="size-4" />} title="Weekly summary" desc="A digest of fleet activity every Monday." onChange={() => {}} />
+              <PrefRow
+                icon={<Bell className="size-4" />}
+                title="Weekly summary"
+                desc="A digest of fleet activity every Monday."
+                checked={weeklySummary}
+                onChange={(v) => {
+                  setWeeklySummary(v);
+                  toast.success(v ? "Weekly summary on" : "Weekly summary off");
+                }}
+              />
             </CardContent>
           </Card>
         </TabsContent>

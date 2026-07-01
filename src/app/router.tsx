@@ -1,5 +1,10 @@
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "./AppLayout";
+import { useAppStore } from "./store";
+import { PORTALS } from "./portals";
+import LoginPage from "@/features/auth/LoginPage";
+import MfaPage from "@/features/auth/MfaPage";
+import PortalLauncher from "@/features/launcher/PortalLauncher";
 import DashboardPage from "@/features/dashboard/DashboardPage";
 import VehiclesPage from "@/features/vehicles/VehiclesPage";
 import ObusPage from "@/features/obus/ObusPage";
@@ -15,12 +20,33 @@ import SupportPage from "@/features/support/SupportPage";
 import AccountPage from "@/features/account/AccountPage";
 import NotFoundPage from "@/features/misc/NotFoundPage";
 
+/** Gate the app shell behind login → MFA → portal selection. */
+function RequireApp() {
+  const { user, mfaVerified, activePortal } = useAppStore();
+  if (!user) return <Navigate to="/login" replace />;
+  if (!mfaVerified) return <Navigate to="/mfa" replace />;
+  if (!activePortal) return <Navigate to="/launcher" replace />;
+  return <AppLayout />;
+}
+
+/** The unified dashboard is Toll 2.0's home; other portals land on a module. */
+function PortalIndex() {
+  const { activePortal } = useAppStore();
+  if (activePortal && activePortal !== "Toll2.0") {
+    return <Navigate to={PORTALS[activePortal].home} replace />;
+  }
+  return <DashboardPage />;
+}
+
 export const router = createBrowserRouter([
+  { path: "/login", element: <LoginPage /> },
+  { path: "/mfa", element: <MfaPage /> },
+  { path: "/launcher", element: <PortalLauncher /> },
   {
     path: "/",
-    element: <AppLayout />,
+    element: <RequireApp />,
     children: [
-      { index: true, element: <DashboardPage /> },
+      { index: true, element: <PortalIndex /> },
       { path: "vehicles", element: <VehiclesPage /> },
       { path: "obus", element: <ObusPage /> },
       { path: "hauliers", element: <HauliersPage /> },

@@ -22,14 +22,44 @@ import { COUNTRIES } from "@/mocks/catalog";
 import { toast } from "sonner";
 
 const RESOURCES = [
-  { icon: BookOpen, title: "Product help", desc: "Guides for MST Card, OBUs, vignettes & more." },
-  { icon: Globe2, title: "Country tolls", desc: "Requirements & coverage by country." },
-  { icon: Download, title: "User manuals", desc: "Download PDF manuals for every product." },
-  { icon: MessageSquare, title: "Give feedback", desc: "Tell us how we can improve MSTS One." },
+  {
+    icon: BookOpen,
+    title: "Product help",
+    desc: "Guides for MST Card, OBUs, vignettes & more.",
+    action: () => toast.info("Opening product help guides"),
+  },
+  {
+    icon: Globe2,
+    title: "Country tolls",
+    desc: "Requirements & coverage by country.",
+    action: () => toast.info("Opening country toll requirements"),
+  },
+  {
+    icon: Download,
+    title: "User manuals",
+    desc: "Download PDF manuals for every product.",
+    action: () => toast.success("Manuals downloaded", { description: "msts-one-manuals.zip" }),
+  },
+  {
+    icon: MessageSquare,
+    title: "Give feedback",
+    desc: "Tell us how we can improve MSTS One.",
+    action: () => {
+      document.getElementById("support-contact")?.scrollIntoView({ behavior: "smooth" });
+      toast.info("Share your feedback below");
+    },
+  },
 ];
 
 export default function SupportPage() {
   const [q, setQ] = React.useState("");
+  const query = q.trim().toLowerCase();
+  const resources = query
+    ? RESOURCES.filter(
+        (r) =>
+          r.title.toLowerCase().includes(query) || r.desc.toLowerCase().includes(query)
+      )
+    : RESOURCES;
 
   return (
     <div className="space-y-6">
@@ -62,8 +92,25 @@ export default function SupportPage() {
       </Card>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {RESOURCES.map((r) => (
-          <Card key={r.title} className="group cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-card-hover">
+        {resources.length === 0 && (
+          <p className="col-span-full rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            No help resources match “{q}”.
+          </p>
+        )}
+        {resources.map((r) => (
+          <Card
+            key={r.title}
+            role="button"
+            tabIndex={0}
+            onClick={r.action}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                r.action();
+              }
+            }}
+            className="group cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
             <CardContent className="flex items-center gap-4 p-5">
               <span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary">
                 <r.icon className="size-5" />
@@ -79,7 +126,7 @@ export default function SupportPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
+        <Card id="support-contact" className="lg:col-span-2">
           <CardHeader><CardTitle>Contact support</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">

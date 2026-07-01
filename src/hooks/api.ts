@@ -45,6 +45,14 @@ export const useReports = () =>
 export const useNotifications = () =>
   useQuery({ queryKey: ["notifications"], queryFn: () => api.get<NotificationItem[]>("/api/notifications") });
 
+export const useMarkNotificationsRead = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post("/api/notifications/read-all", {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+};
+
 export const useActivity = () =>
   useQuery({ queryKey: ["activity"], queryFn: () => api.get<ActivityEvent[]>("/api/activity") });
 

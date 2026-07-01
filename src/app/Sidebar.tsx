@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { NAV } from "./nav";
+import { navForPortal, NAV } from "./nav";
+import { PORTALS } from "./portals";
 import { Logo, LogoMark } from "@/components/brand/Logo";
 import { useAppStore } from "./store";
 import {
@@ -11,7 +12,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { sidebarCollapsed: collapsed, toggleSidebar } = useAppStore();
+  const { sidebarCollapsed: collapsed, toggleSidebar, activePortal } = useAppStore();
+  const portal = activePortal ? PORTALS[activePortal] : null;
+  const groups = activePortal ? navForPortal(activePortal) : NAV;
 
   return (
     <div className="flex h-full flex-col sidebar-bg">
@@ -26,18 +29,41 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         {collapsed ? (
           <LogoMark />
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <Logo className="h-6" />
-            <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/70">
-              One
+            <span
+              className="truncate rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
+              style={{ background: portal ? portal.accent : "rgba(255,255,255,0.1)" }}
+            >
+              {portal ? portal.name : "One"}
             </span>
           </div>
         )}
       </div>
 
+      {/* Active portal identity bar */}
+      {portal && (
+        <div
+          className={cn(
+            "flex items-center gap-2 border-b border-[hsl(var(--sidebar-border))] px-4 py-2.5",
+            collapsed && "justify-center px-2"
+          )}
+        >
+          <span
+            className="size-2.5 shrink-0 rounded-full"
+            style={{ background: portal.accent }}
+          />
+          {!collapsed && (
+            <span className="truncate text-[11px] text-[hsl(var(--sidebar-muted))]">
+              {portal.tagline}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Nav */}
       <nav className="no-scrollbar flex-1 space-y-5 overflow-y-auto px-3 py-4">
-        {NAV.map((group) => (
+        {groups.map((group) => (
           <div key={group.label}>
             {!collapsed && (
               <p className="px-2 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--sidebar-muted))]">

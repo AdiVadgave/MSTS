@@ -2,7 +2,7 @@ import * as React from "react";
 import { Command } from "cmdk";
 import { useNavigate } from "react-router-dom";
 import { Search, CornerDownLeft, Plus, FileUp, Upload } from "lucide-react";
-import { NAV } from "./nav";
+import { navForPortal, NAV } from "./nav";
 import { useAppStore } from "./store";
 import { SourceTag } from "@/components/common/SourceTag";
 import { cn } from "@/lib/utils";
@@ -15,8 +15,14 @@ const QUICK_ACTIONS = [
 ];
 
 export function CommandPalette() {
-  const { commandOpen, setCommandOpen } = useAppStore();
+  const { commandOpen, setCommandOpen, activePortal } = useAppStore();
   const navigate = useNavigate();
+  const groups = activePortal ? navForPortal(activePortal) : NAV;
+  // Only surface quick actions whose target module lives in this portal.
+  const allowed = new Set(groups.flatMap((g) => g.items.map((i) => i.to)));
+  const quickActions = QUICK_ACTIONS.filter((a) =>
+    allowed.has(a.to.split("?")[0])
+  );
 
   const go = (to: string) => {
     setCommandOpen(false);
@@ -51,22 +57,24 @@ export function CommandPalette() {
               No results found.
             </Command.Empty>
 
-            <Command.Group heading="Quick actions">
-              {QUICK_ACTIONS.map((a) => (
-                <Command.Item
-                  key={a.label}
-                  value={`action ${a.label}`}
-                  onSelect={() => go(a.to)}
-                  className={itemCls}
-                >
-                  <a.icon className="size-4 text-muted-foreground" />
-                  <span>{a.label}</span>
-                  <CornerDownLeft className="ml-auto size-3.5 text-muted-foreground opacity-0 aria-selected:opacity-100" />
-                </Command.Item>
-              ))}
-            </Command.Group>
+            {quickActions.length > 0 && (
+              <Command.Group heading="Quick actions">
+                {quickActions.map((a) => (
+                  <Command.Item
+                    key={a.label}
+                    value={`action ${a.label}`}
+                    onSelect={() => go(a.to)}
+                    className={itemCls}
+                  >
+                    <a.icon className="size-4 text-muted-foreground" />
+                    <span>{a.label}</span>
+                    <CornerDownLeft className="ml-auto size-3.5 text-muted-foreground opacity-0 aria-selected:opacity-100" />
+                  </Command.Item>
+                ))}
+              </Command.Group>
+            )}
 
-            {NAV.map((group) => (
+            {groups.map((group) => (
               <Command.Group key={group.label} heading={group.label}>
                 {group.items.map((item) => (
                   <Command.Item

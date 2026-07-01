@@ -1,6 +1,9 @@
-import { Menu, Search, Bell, Sun, Moon, Check, ChevronsUpDown, LogOut, User as UserIcon, Building } from "lucide-react";
+import { Menu, Search, Bell, Sun, Moon, Check, ChevronsUpDown, LogOut, User as UserIcon, Building, CheckCheck, LayoutGrid } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useAppStore } from "./store";
-import { useEntities, useNotifications } from "@/hooks/api";
+import { PORTALS, PORTAL_LIST } from "./portals";
+import { useEntities, useNotifications, useMarkNotificationsRead } from "@/hooks/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -29,11 +32,25 @@ const DOT: Record<string, string> = {
 };
 
 export function Topbar() {
-  const { entity, setEntity, setCommandOpen, setMobileNavOpen, theme, toggleTheme } =
-    useAppStore();
+  const {
+    entity,
+    setEntity,
+    setCommandOpen,
+    setMobileNavOpen,
+    theme,
+    toggleTheme,
+    signOut,
+    user,
+    activePortal,
+    selectPortal,
+    leavePortal,
+  } = useAppStore();
+  const navigate = useNavigate();
   const { data: entities } = useEntities();
   const { data: notifications } = useNotifications();
+  const markRead = useMarkNotificationsRead();
   const [entityOpen, setEntityOpen] = React.useState(false);
+  const portal = activePortal ? PORTALS[activePortal] : null;
 
   // default entity once loaded
   React.useEffect(() => {
@@ -52,6 +69,55 @@ export function Topbar() {
       >
         <Menu />
       </Button>
+
+      {/* Portal switcher — preserves each portal's identity + easy hopping */}
+      {portal && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 text-sm shadow-sm transition-colors hover:bg-secondary">
+              <span className="size-2.5 shrink-0 rounded-full" style={{ background: portal.accent }} />
+              <span className="font-semibold">{portal.name}</span>
+              <ChevronsUpDown className="size-3.5 text-muted-foreground" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-64">
+            <DropdownMenuLabel className="text-[11px] uppercase tracking-wide text-muted-foreground">
+              Switch portal
+            </DropdownMenuLabel>
+            {PORTAL_LIST.map((p) => (
+              <DropdownMenuItem
+                key={p.id}
+                onClick={() => {
+                  selectPortal(p.id);
+                  navigate(p.home);
+                }}
+                className="gap-2"
+              >
+                <span className="size-2.5 shrink-0 rounded-full" style={{ background: p.accent }} />
+                <span className="flex-1">
+                  <span className="block font-medium">{p.name}</span>
+                  <span className="block text-xs text-muted-foreground">{p.tagline}</span>
+                </span>
+                <Check
+                  className={cn(
+                    "size-4 shrink-0 text-primary",
+                    activePortal === p.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                leavePortal();
+                navigate("/launcher");
+              }}
+            >
+              <LayoutGrid /> All portals
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       {/* Entity switcher */}
       <Popover open={entityOpen} onOpenChange={setEntityOpen}>
@@ -136,7 +202,24 @@ export function Topbar() {
           <PopoverContent align="end" className="w-96 p-0">
             <div className="flex items-center justify-between border-b p-3">
               <p className="font-semibold">Notifications</p>
-              {unread > 0 && <Badge variant="destructive">{unread} new</Badge>}
+              <div className="flex items-center gap-2">
+                {unread > 0 && <Badge variant="destructive">{unread} new</Badge>}
+                {unread > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs"
+                    disabled={markRead.isPending}
+                    onClick={() =>
+                      markRead.mutate(undefined, {
+                        onSuccess: () => toast.success("All notifications marked as read"),
+                      })
+                    }
+                  >
+                    <CheckCheck className="size-3.5" /> Mark all read
+                  </Button>
+                )}
+              </div>
             </div>
             <div className="max-h-96 overflow-y-auto">
               {notifications?.map((n) => (
@@ -166,26 +249,32 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <button className="ml-1 flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <Avatar>
-                <AvatarFallback>{initials("Aman MSTS")}</AvatarFallback>
+                <AvatarFallback>{initials(user?.name ?? "Aman MSTS")}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="normal-case">
-              <p className="text-sm font-semibold text-foreground">Aman MSTS</p>
+              <p className="text-sm font-semibold text-foreground">{user?.name ?? "Aman MSTS"}</p>
               <p className="text-xs font-normal text-muted-foreground">
-                aman@nvd-transport.nl
+                {user?.email ?? "aman@nvd-transport.nl"}
               </p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/account?tab=profile")}>
               <UserIcon /> My account
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/account?tab=entity")}>
               <Building /> Company settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                signOut();
+                toast.success("You've been signed out");
+                navigate("/login");
+              }}
+            >
               <LogOut /> Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>

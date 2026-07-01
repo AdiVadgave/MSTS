@@ -64,7 +64,14 @@ export default function ReportsPage() {
         description="Standard, custom and scheduled reports. Export to CSV, PDF or Excel."
         badge={<SourceTag source="MyMST" />}
         actions={
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={() =>
+              toast.info("No scheduled reports yet", {
+                description: "Run a report and choose a cadence to schedule automatic exports.",
+              })
+            }
+          >
             <CalendarClock /> Scheduled reports
           </Button>
         }

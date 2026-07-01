@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2,
@@ -33,6 +34,7 @@ const STEPS = [
 ];
 
 export default function OnboardingPage() {
+  const navigate = useNavigate();
   const [step, setStep] = React.useState(0);
   const [done, setDone] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
@@ -86,7 +88,7 @@ export default function OnboardingPage() {
                 {form.company || "Your company"} is onboarded. Vehicles and devices are queued
                 for activation, and an admin invite was sent to {form.adminEmail || "your admin"}.
               </p>
-              <Button onClick={() => { setDone(false); setStep(0); }}>Go to dashboard</Button>
+              <Button onClick={() => navigate("/")}>Go to dashboard</Button>
             </CardContent>
           </Card>
         </motion.div>
