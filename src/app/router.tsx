@@ -29,11 +29,14 @@ function RequireApp() {
   return <AppLayout />;
 }
 
-/** The unified dashboard is Toll 2.0's home; other portals land on a module. */
+/**
+ * The fleet Dashboard is the home of Toll 2.0 and MyTolls. MyMST has no
+ * dashboard, so it lands on its first module instead.
+ */
 function PortalIndex() {
   const { activePortal } = useAppStore();
-  if (activePortal && activePortal !== "Toll2.0") {
-    return <Navigate to={PORTALS[activePortal].home} replace />;
+  if (activePortal === "MyMST") {
+    return <Navigate to={PORTALS.MyMST.home} replace />;
   }
   return <DashboardPage />;
 }

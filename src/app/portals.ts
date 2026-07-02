@@ -31,7 +31,7 @@ export const PORTALS: Record<PortalId, PortalDef> = {
     tagline: "Fleet, hauliers & tolling products",
     blurb:
       "Manage vehicles and owners, run AI RC-card extraction, and order or block tolling products across Europe.",
-    home: "/vehicles",
+    home: "/",
     icon: Truck,
     accent: "#2563eb",
     cardClass: "from-blue-500/15 to-blue-500/0 ring-blue-500/30",

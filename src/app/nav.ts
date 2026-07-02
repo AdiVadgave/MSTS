@@ -40,7 +40,7 @@ export const NAV: NavGroup[] = [
         label: "Dashboard",
         to: "/",
         icon: LayoutDashboard,
-        sources: ["Toll2.0"],
+        sources: ["MyTolls", "Toll2.0"],
         keywords: ["home", "overview", "kpi", "fleet"],
         description: "Fleet overview & KPIs",
       },
