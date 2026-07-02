@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { PRODUCTS } from "./catalog";
+import { PRODUCTS, REPORTS } from "./catalog";
 import { loadDb, saveDb, clearDb } from "./persistence";
 import type {
   ActivityEvent,
@@ -11,6 +11,7 @@ import type {
   OBU,
   Order,
   Profile,
+  ScheduledReport,
   Settings,
   SupportTicket,
   TollDomain,
@@ -50,6 +51,7 @@ export interface DBShape {
   notifications: NotificationItem[];
   activity: ActivityEvent[];
   tickets: SupportTicket[];
+  scheduledReports: ScheduledReport[];
   profile: Profile;
   settings: Settings;
 }
@@ -272,10 +274,32 @@ export function seedData(): DBShape {
     twoFactor: true,
   };
 
+  const addDays = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const scheduledReports: ScheduledReport[] = [
+    { reportId: "turnover-analysis", format: "PDF" as const, cadence: "monthly" as const, entityId: "e1", days: 12 },
+    { reportId: "unbilled", format: "CSV" as const, cadence: "weekly" as const, entityId: "e1", days: 4 },
+    { reportId: "truck-detail", format: "XLSX" as const, cadence: "daily" as const, entityId: "e2", days: 1 },
+  ].map((s) => {
+    const def = REPORTS.find((r) => r.id === s.reportId);
+    const created = faker.date.past({ years: 1 });
+    return {
+      id: uid("sch"),
+      entityId: s.entityId,
+      reportId: s.reportId,
+      reportName: def?.name ?? s.reportId,
+      format: s.format,
+      cadence: s.cadence,
+      status: "active" as const,
+      createdAt: iso(created),
+      lastRunAt: iso(faker.date.recent({ days: s.days + 1 })),
+      nextRunAt: iso(addDays(new Date(), s.days)),
+    };
+  });
+
   return {
     entities, hauliers, vehicles, obus, domains, transactions,
     invoices, users, orders, notifications, activity,
-    tickets: [], profile, settings,
+    tickets: [], scheduledReports, profile, settings,
   };
 }
 

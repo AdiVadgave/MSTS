@@ -27,6 +27,7 @@ import { useReports, useRunReportData } from "@/hooks/api";
 import { downloadCSV, downloadTablePDF, downloadXLS, downloadJSON } from "@/lib/download";
 import type { ReportDef } from "@/lib/types";
 import { toast } from "sonner";
+import { ScheduledReportsDialog } from "./ScheduledReportsDialog";
 
 const CAT_ICON: Record<string, typeof FileText> = {
   Transactions: Receipt,
@@ -41,6 +42,7 @@ export default function ReportsPage() {
   const run = useRunReportData();
   const [cat, setCat] = React.useState("all");
   const [runningId, setRunningId] = React.useState<string | null>(null);
+  const [scheduleOpen, setScheduleOpen] = React.useState(false);
 
   const categories = ["all", "Transactions", "Financial", "Fleet", "Toll"];
   const filtered = reports?.filter((r) => cat === "all" || r.category === cat) ?? [];
@@ -74,14 +76,7 @@ export default function ReportsPage() {
         description="Standard, custom and scheduled reports. Export to CSV, PDF or Excel."
         badge={<SourceTag source="MyMST" />}
         actions={
-          <Button
-            variant="outline"
-            onClick={() =>
-              toast.info("No scheduled reports yet", {
-                description: "Run a report and choose a cadence to schedule automatic exports.",
-              })
-            }
-          >
+          <Button variant="outline" onClick={() => setScheduleOpen(true)}>
             <CalendarClock /> Scheduled reports
           </Button>
         }
@@ -143,6 +138,8 @@ export default function ReportsPage() {
               );
             })}
       </div>
+
+      <ScheduledReportsDialog open={scheduleOpen} onOpenChange={setScheduleOpen} />
     </div>
   );
 }

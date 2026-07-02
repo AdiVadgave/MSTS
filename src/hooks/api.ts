@@ -16,6 +16,7 @@ import type {
   Paginated,
   Profile,
   ReportDef,
+  ScheduledReport,
   Settings,
   SupportTicket,
   TollDomain,
@@ -357,6 +358,51 @@ export function useRunReportData() {
   return useMutation({
     mutationFn: ({ id, format }: { id: string; format: string }) =>
       api.post<ReportRun>(`/api/reports/${id}/run`, { format, entityId }),
+  });
+}
+
+// ── Scheduled reports ──────────────────────────────────────────
+export function useScheduledReports() {
+  const entityId = useEntityId();
+  return useQuery({
+    queryKey: ["scheduled-reports", entityId],
+    queryFn: () =>
+      api.get<ScheduledReport[]>(`/api/scheduled-reports${buildQuery({ entityId })}`),
+  });
+}
+
+export function useCreateSchedule() {
+  const qc = useQueryClient();
+  const entityId = useEntityId();
+  return useMutation({
+    mutationFn: (body: { reportId: string; reportName: string; format: string; cadence: string }) =>
+      api.post<ScheduledReport>("/api/scheduled-reports", { ...body, entityId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["scheduled-reports"] }),
+  });
+}
+
+export function useUpdateSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: Partial<ScheduledReport> & { id: string }) =>
+      api.patch<ScheduledReport>(`/api/scheduled-reports/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["scheduled-reports"] }),
+  });
+}
+
+export function useRunSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.post<ScheduledReport>(`/api/scheduled-reports/${id}/run`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["scheduled-reports"] }),
+  });
+}
+
+export function useDeleteSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.del(`/api/scheduled-reports/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["scheduled-reports"] }),
   });
 }
 

@@ -12,6 +12,8 @@ import type {
   Invoice,
   Entity,
   SupportTicket,
+  ScheduledReport,
+  Cadence,
 } from "@/lib/types";
 
 const now = () => new Date().toISOString();
@@ -26,6 +28,15 @@ function monthKey(d: Date) {
 /** Filter any entity-owned collection by the active entity (or pass through). */
 function scopeByEntity<T extends { entityId: string }>(rows: T[], eid: string | null): T[] {
   return eid ? rows.filter((r) => r.entityId === eid) : rows;
+}
+
+/** Next run timestamp from a cadence, measured from `from`. */
+function nextRun(cadence: Cadence, from = new Date()): string {
+  const d = new Date(from);
+  if (cadence === "daily") d.setDate(d.getDate() + 1);
+  else if (cadence === "weekly") d.setDate(d.getDate() + 7);
+  else d.setMonth(d.getMonth() + 1);
+  return d.toISOString();
 }
 
 /** Resolve a report id to a concrete column set + rows drawn from the DB. */
@@ -732,6 +743,64 @@ export const handlers = [
     db.tickets.unshift(ticket);
     persist();
     return HttpResponse.json(ticket, { status: 201 });
+  }),
+
+  // ── Scheduled reports ────────────────────────────────────────
+  http.get("/api/scheduled-reports", async ({ request }) => {
+    await latency();
+    const eid = new URL(request.url).searchParams.get("entityId");
+    const rows = scopeByEntity(db.scheduledReports, eid)
+      .slice()
+      .sort((a, b) => (a.nextRunAt < b.nextRunAt ? -1 : 1));
+    return HttpResponse.json(rows);
+  }),
+  http.post("/api/scheduled-reports", async ({ request }) => {
+    await latency();
+    const body = (await request.json()) as Partial<ScheduledReport>;
+    const def = REPORTS.find((r) => r.id === body.reportId);
+    const cadence = (body.cadence ?? "monthly") as Cadence;
+    const sched: ScheduledReport = {
+      id: rid("sch"),
+      entityId: body.entityId ?? db.entities[0].id,
+      reportId: body.reportId ?? "transactions",
+      reportName: def?.name ?? body.reportId ?? "Report",
+      format: (body.format ?? "CSV") as ScheduledReport["format"],
+      cadence,
+      status: "active",
+      createdAt: now(),
+      lastRunAt: null,
+      nextRunAt: nextRun(cadence),
+    };
+    db.scheduledReports.unshift(sched);
+    persist();
+    return HttpResponse.json(sched, { status: 201 });
+  }),
+  http.patch("/api/scheduled-reports/:id", async ({ params, request }) => {
+    await latency();
+    const s = db.scheduledReports.find((x) => x.id === params.id);
+    if (!s) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as Partial<ScheduledReport>;
+    if (body.status) s.status = body.status;
+    if (body.cadence) { s.cadence = body.cadence; s.nextRunAt = nextRun(body.cadence); }
+    if (body.format) s.format = body.format;
+    persist();
+    return HttpResponse.json(s);
+  }),
+  http.post("/api/scheduled-reports/:id/run", async ({ params }) => {
+    await latency();
+    const s = db.scheduledReports.find((x) => x.id === params.id);
+    if (!s) return new HttpResponse(null, { status: 404 });
+    s.lastRunAt = now();
+    s.nextRunAt = nextRun(s.cadence);
+    persist();
+    return HttpResponse.json(s);
+  }),
+  http.delete("/api/scheduled-reports/:id", async ({ params }) => {
+    await latency();
+    const idx = db.scheduledReports.findIndex((x) => x.id === params.id);
+    if (idx >= 0) db.scheduledReports.splice(idx, 1);
+    persist();
+    return HttpResponse.json({ ok: true });
   }),
 
   // ── System: reset demo data ──────────────────────────────────

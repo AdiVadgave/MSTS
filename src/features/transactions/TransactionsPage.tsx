@@ -102,7 +102,6 @@ export default function TransactionsPage() {
           value={data?.rows.filter((t) => t.status === "exception").length ?? 0}
           icon={TriangleAlert}
           accent="destructive"
-          hint="on this page"
         />
         <StatCard
           label="Page value"

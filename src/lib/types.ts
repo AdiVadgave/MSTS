@@ -231,6 +231,21 @@ export interface ReportDef {
   scheduled?: boolean;
 }
 
+export type Cadence = "daily" | "weekly" | "monthly";
+
+export interface ScheduledReport {
+  id: string;
+  entityId: string;
+  reportId: string;
+  reportName: string;
+  format: "CSV" | "PDF" | "XLSX";
+  cadence: Cadence;
+  status: "active" | "paused";
+  createdAt: string;
+  lastRunAt: string | null;
+  nextRunAt: string;
+}
+
 export interface Paginated<T> {
   rows: T[];
   total: number;
