@@ -36,6 +36,8 @@ interface VehicleFormSheetProps {
   onOpenChange: (v: boolean) => void;
   vehicle?: Vehicle | null;
   prefill?: Partial<VehicleFormValues> | null;
+  /** Called with the newly-created vehicle so the caller can jump to ordering. */
+  onCreated?: (vehicle: Vehicle) => void;
 }
 
 export function VehicleFormSheet({
@@ -43,6 +45,7 @@ export function VehicleFormSheet({
   onOpenChange,
   vehicle,
   prefill,
+  onCreated,
 }: VehicleFormSheetProps) {
   const isEdit = !!vehicle;
   const { data: entities } = useEntities();
@@ -103,11 +106,15 @@ export function VehicleFormSheet({
       if (isEdit && vehicle) {
         await update.mutateAsync({ id: vehicle.id, ...values } as never);
         toast.success(`Vehicle ${values.plate} updated`);
+        onOpenChange(false);
       } else {
-        await create.mutateAsync(values as never);
-        toast.success(`Vehicle ${values.plate} created`);
+        const created = await create.mutateAsync(values as never);
+        toast.success(`Vehicle ${values.plate} created`, {
+          description: "Review eligible products and order below.",
+        });
+        onOpenChange(false);
+        onCreated?.(created);
       }
-      onOpenChange(false);
     } catch {
       toast.error("Something went wrong. Please try again.");
     }

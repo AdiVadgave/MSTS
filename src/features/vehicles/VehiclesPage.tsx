@@ -34,6 +34,7 @@ export default function VehiclesPage() {
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Vehicle | null>(null);
   const [detailId, setDetailId] = React.useState<string | null>(null);
+  const [detailTab, setDetailTab] = React.useState<"details" | "products">("details");
   const [rcOpen, setRcOpen] = React.useState(false);
   const [bulkOpen, setBulkOpen] = React.useState(false);
   const [prefill, setPrefill] = React.useState<Partial<VehicleFormValues> | null>(null);
@@ -131,7 +132,10 @@ export default function VehiclesPage() {
         rows={data?.rows ?? []}
         loading={isLoading}
         getRowId={(v) => v.id}
-        onRowClick={(v) => setDetailId(v.id)}
+        onRowClick={(v) => {
+          setDetailTab("details");
+          setDetailId(v.id);
+        }}
         total={data?.total ?? 0}
         page={page}
         pageSize={10}
@@ -191,9 +195,15 @@ export default function VehiclesPage() {
         onOpenChange={setFormOpen}
         vehicle={editing}
         prefill={prefill}
+        onCreated={(v) => {
+          // Jump straight into the new vehicle's Products tab to order.
+          setDetailTab("products");
+          setDetailId(v.id);
+        }}
       />
       <VehicleDetailSheet
         vehicleId={detailId}
+        initialTab={detailTab}
         onOpenChange={(v) => !v && setDetailId(null)}
         onEdit={() => {
           const v = data?.rows.find((x) => x.id === detailId) ?? null;

@@ -28,6 +28,8 @@ interface Props {
   vehicleId: string | null;
   onOpenChange: (v: boolean) => void;
   onEdit: () => void;
+  /** Which tab to open on (e.g. "products" straight after creating). */
+  initialTab?: "details" | "products" | "devices" | "history";
 }
 
 const STATUS_CFG: Record<
@@ -40,12 +42,18 @@ const STATUS_CFG: Record<
   blocked: { icon: AlertTriangle, tile: "bg-warning/15 text-amber-600", badge: "warning" },
 };
 
-export function VehicleDetailSheet({ vehicleId, onOpenChange, onEdit }: Props) {
+export function VehicleDetailSheet({ vehicleId, onOpenChange, onEdit, initialTab = "details" }: Props) {
   const { data: vehicle, isLoading } = useVehicle(vehicleId ?? undefined);
   const { data: history } = useVehicleHistory(vehicleId ?? undefined);
   const deactivate = useDeactivateVehicle();
   const createOrder = useCreateOrder();
   const [orderingCode, setOrderingCode] = React.useState<string | null>(null);
+  const [tab, setTab] = React.useState<string>(initialTab);
+
+  // Reset to the requested tab whenever a different vehicle is opened.
+  React.useEffect(() => {
+    if (vehicleId) setTab(initialTab);
+  }, [vehicleId, initialTab]);
 
   const onDeactivate = async () => {
     if (!vehicle) return;
@@ -92,7 +100,7 @@ export function VehicleDetailSheet({ vehicleId, onOpenChange, onEdit }: Props) {
               ))}
             </div>
           ) : (
-            <Tabs defaultValue="details">
+            <Tabs value={tab} onValueChange={setTab}>
               <TabsList>
                 <TabsTrigger value="details"><Package /> Details</TabsTrigger>
                 <TabsTrigger value="products"><ShoppingCart /> Products</TabsTrigger>
