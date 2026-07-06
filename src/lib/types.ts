@@ -269,3 +269,44 @@ export interface RCCardExtraction {
   raw?: Record<string, unknown>;
   source: "azure-openai" | "mock";
 }
+
+// ── Whitelabel partners ─────────────────────────────────────────
+export type PartnerPackage = "basic" | "professional" | "enterprise";
+
+export type PartnerStatus = "active" | "draft" | "suspended";
+
+export type FeatureFlag =
+  | "dashboard"
+  | "vehicles"
+  | "obu"
+  | "hauliers"
+  | "products"
+  | "domains"
+  | "transactions"
+  | "reports"
+  | "finance"
+  | "users"
+  | "onboarding"
+  | "api-access"
+  | "branded-invoicing"
+  | "scheduled-reports";
+
+/** A whitelabel business partner (reseller) running the portal under
+ *  their own brand. MSTS itself is represented by `null`, not a record. */
+export interface Partner {
+  id: string;
+  name: string;
+  /** URL-safe id; simulated domain is tolls.<slug>.com */
+  slug: string;
+  /** Uploaded logo (data URL). Monogram fallback when absent. */
+  logoDataUrl?: string;
+  /** Hex accent, e.g. "#2F7D4F" — drives --brand-accent. */
+  accentColor: string;
+  package: PartnerPackage;
+  /** Derived from package on selection, individually overridable. */
+  features: FeatureFlag[];
+  status: PartnerStatus;
+  /** Tenant isolation: customer entities this partner owns. */
+  entityIds: string[];
+  createdAt: string;
+}
