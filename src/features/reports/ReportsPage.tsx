@@ -32,6 +32,8 @@ import { formatDate } from "@/lib/utils";
 import type { ReportDef } from "@/lib/types";
 import { toast } from "sonner";
 import { ScheduledReportsDialog } from "./ScheduledReportsDialog";
+import { featureEnabled } from "@/lib/brand";
+import { useAppStore } from "@/app/store";
 
 const CAT_ICON: Record<string, typeof FileText> = {
   Transactions: Receipt,
@@ -42,6 +44,7 @@ const CAT_ICON: Record<string, typeof FileText> = {
 };
 
 export default function ReportsPage() {
+  const { activeBrand } = useAppStore();
   const { data: reports, isLoading } = useReports();
   const run = useRunReportData();
   const [cat, setCat] = React.useState("all");
@@ -85,9 +88,11 @@ export default function ReportsPage() {
         description="Standard, custom and scheduled reports. Export to CSV, PDF or Excel."
         badge={<SourceTag source="MyMST" />}
         actions={
-          <Button variant="outline" onClick={() => setScheduleOpen(true)}>
-            <CalendarClock /> Scheduled reports
-          </Button>
+          featureEnabled(activeBrand, "scheduled-reports") && (
+            <Button variant="outline" onClick={() => setScheduleOpen(true)}>
+              <CalendarClock /> Scheduled reports
+            </Button>
+          )
         }
       />
 

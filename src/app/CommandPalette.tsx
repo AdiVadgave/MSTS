@@ -15,9 +15,9 @@ const QUICK_ACTIONS = [
 ];
 
 export function CommandPalette() {
-  const { commandOpen, setCommandOpen, activePortal } = useAppStore();
+  const { commandOpen, setCommandOpen, activePortal, activeBrand } = useAppStore();
   const navigate = useNavigate();
-  const groups = activePortal ? navForPortal(activePortal) : NAV;
+  const groups = activePortal ? navForPortal(activePortal, activeBrand) : NAV;
   // Only surface quick actions whose target module lives in this portal.
   const allowed = new Set(groups.flatMap((g) => g.items.map((i) => i.to)));
   const quickActions = QUICK_ACTIONS.filter((a) =>

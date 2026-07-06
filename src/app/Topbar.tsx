@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAppStore } from "./store";
 import { PORTALS, PORTAL_LIST } from "./portals";
+import { navForPortal } from "./nav";
 import { useEntities, useNotifications, useMarkNotificationsRead } from "@/hooks/api";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -55,6 +56,14 @@ export function Topbar() {
   // toggle: it shows the *other* portal and hops straight to it.
   const otherPortal = PORTAL_LIST.find((p) => p.id !== activePortal) ?? null;
 
+  // Hide the hop when every module of the other portal is outside the
+  // partner's package (e.g. MyMST under a Basic plan).
+  const otherPortalUsable = otherPortal
+    ? navForPortal(otherPortal.id, activeBrand).some(
+        (g) => g.label !== "General" && g.items.length > 0
+      )
+    : false;
+
   // Entities visible in this portal: a partner sees only the customer
   // entities it owns (tenant isolation); MSTS sees everything.
   const visibleEntities = React.useMemo(
@@ -89,7 +98,7 @@ export function Topbar() {
       </Button>
 
       {/* Portal switcher — one-tap toggle to the other portal */}
-      {portal && otherPortal && (
+      {portal && otherPortal && otherPortalUsable && (
         <button
           onClick={() => {
             selectPortal(otherPortal.id);

@@ -13,9 +13,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { sidebarCollapsed: collapsed, toggleSidebar, activePortal } = useAppStore();
+  const { sidebarCollapsed: collapsed, toggleSidebar, activePortal, activeBrand } = useAppStore();
   const portal = activePortal ? PORTALS[activePortal] : null;
-  const groups = activePortal ? navForPortal(activePortal) : NAV;
+  const groups = activePortal ? navForPortal(activePortal, activeBrand) : NAV;
 
   return (
     <div className="flex h-full flex-col sidebar-bg">

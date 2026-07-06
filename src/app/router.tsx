@@ -18,6 +18,7 @@ import OnboardingPage from "@/features/onboarding/OnboardingPage";
 import SupportPage from "@/features/support/SupportPage";
 import AccountPage from "@/features/account/AccountPage";
 import NotFoundPage from "@/features/misc/NotFoundPage";
+import { FeatureGate } from "@/components/common/FeatureGate";
 
 /** Gate the app shell behind login → MFA → portal selection. */
 function RequireApp() {
@@ -48,17 +49,17 @@ export const router = createBrowserRouter([
     path: "/",
     element: <RequireApp />,
     children: [
-      { index: true, element: <PortalIndex /> },
-      { path: "vehicles", element: <VehiclesPage /> },
-      { path: "obus", element: <ObusPage /> },
-      { path: "hauliers", element: <HauliersPage /> },
-      { path: "products", element: <ProductsPage /> },
-      { path: "domains", element: <DomainsPage /> },
-      { path: "transactions", element: <TransactionsPage /> },
-      { path: "reports", element: <ReportsPage /> },
-      { path: "finance", element: <FinancePage /> },
-      { path: "users", element: <UsersPage /> },
-      { path: "onboarding", element: <OnboardingPage /> },
+      { index: true, element: <FeatureGate feature="dashboard" moduleName="Dashboard"><PortalIndex /></FeatureGate> },
+      { path: "vehicles", element: <FeatureGate feature="vehicles" moduleName="Vehicles"><VehiclesPage /></FeatureGate> },
+      { path: "obus", element: <FeatureGate feature="obu" moduleName="OBU & Devices"><ObusPage /></FeatureGate> },
+      { path: "hauliers", element: <FeatureGate feature="hauliers" moduleName="Hauliers"><HauliersPage /></FeatureGate> },
+      { path: "products", element: <FeatureGate feature="products" moduleName="Products & Ordering"><ProductsPage /></FeatureGate> },
+      { path: "domains", element: <FeatureGate feature="domains" moduleName="Domains"><DomainsPage /></FeatureGate> },
+      { path: "transactions", element: <FeatureGate feature="transactions" moduleName="Transactions"><TransactionsPage /></FeatureGate> },
+      { path: "reports", element: <FeatureGate feature="reports" moduleName="Reports"><ReportsPage /></FeatureGate> },
+      { path: "finance", element: <FeatureGate feature="finance" moduleName="Invoices & AR"><FinancePage /></FeatureGate> },
+      { path: "users", element: <FeatureGate feature="users" moduleName="Users & Access"><UsersPage /></FeatureGate> },
+      { path: "onboarding", element: <FeatureGate feature="onboarding" moduleName="Onboarding"><OnboardingPage /></FeatureGate> },
       { path: "support", element: <SupportPage /> },
       { path: "account", element: <AccountPage /> },
       { path: "*", element: <NotFoundPage /> },

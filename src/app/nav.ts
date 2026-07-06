@@ -14,7 +14,8 @@ import {
   Settings,
   type LucideIcon,
 } from "lucide-react";
-import type { SourcePortal } from "@/lib/types";
+import type { FeatureFlag, Partner, SourcePortal } from "@/lib/types";
+import { featureEnabled } from "@/lib/brand";
 import { PORTAL_SOURCES } from "./portals";
 
 export interface NavItem {
@@ -26,6 +27,10 @@ export interface NavItem {
   description?: string;
   /** Cross-cutting modules available inside every portal. */
   global?: boolean;
+  /** Package feature flag gating this module for whitelabel partners. */
+  feature?: FeatureFlag;
+  /** Module reserved for the MSTS brand (e.g. partner administration). */
+  mstsOnly?: boolean;
 }
 
 export interface NavGroup {
@@ -44,6 +49,7 @@ export const NAV: NavGroup[] = [
         sources: ["MyTolls", "Toll2.0"],
         keywords: ["home", "overview", "kpi", "fleet"],
         description: "Fleet overview & KPIs",
+        feature: "dashboard",
       },
     ],
   },
@@ -57,6 +63,7 @@ export const NAV: NavGroup[] = [
         sources: ["MyTolls", "Toll2.0"],
         keywords: ["truck", "trailer", "plate", "rc card", "bulk"],
         description: "Manage vehicles, owners & documents",
+        feature: "vehicles",
       },
       {
         label: "OBU & Devices",
@@ -65,6 +72,7 @@ export const NAV: NavGroup[] = [
         sources: ["Toll2.0"],
         keywords: ["on-board unit", "satellic", "telepass", "device", "shipment"],
         description: "Assign, replace & track devices",
+        feature: "obu",
       },
       {
         label: "Hauliers",
@@ -73,6 +81,7 @@ export const NAV: NavGroup[] = [
         sources: ["MyTolls"],
         keywords: ["carrier", "company", "owner", "contractor"],
         description: "Manage hauliers & owners",
+        feature: "hauliers",
       },
     ],
   },
@@ -86,6 +95,7 @@ export const NAV: NavGroup[] = [
         sources: ["MyTolls"],
         keywords: ["card", "eurovignette", "obu", "order", "block", "vignette", "hu-go"],
         description: "Order & manage tolling products",
+        feature: "products",
       },
       {
         label: "Domains",
@@ -94,6 +104,7 @@ export const NAV: NavGroup[] = [
         sources: ["Toll2.0"],
         keywords: ["toll domain", "assignment", "viapass", "toll collect"],
         description: "Toll domains & assignments",
+        feature: "domains",
       },
     ],
   },
@@ -107,6 +118,7 @@ export const NAV: NavGroup[] = [
         sources: ["MyMST"],
         keywords: ["trx", "usage", "exception", "passage"],
         description: "Search transactions & exceptions",
+        feature: "transactions",
       },
       {
         label: "Reports",
@@ -115,6 +127,7 @@ export const NAV: NavGroup[] = [
         sources: ["MyMST"],
         keywords: ["report", "export", "csv", "pdf", "turnover", "scheduled"],
         description: "Standard, custom & scheduled reports",
+        feature: "reports",
       },
     ],
   },
@@ -128,6 +141,7 @@ export const NAV: NavGroup[] = [
         sources: ["MyMST"],
         keywords: ["invoice", "balance", "payment", "statement", "ar", "dispute"],
         description: "Invoices, balances & payments",
+        feature: "finance",
       },
     ],
   },
@@ -141,6 +155,7 @@ export const NAV: NavGroup[] = [
         sources: ["Toll2.0"],
         keywords: ["role", "permission", "invite", "member"],
         description: "Users, roles & permissions",
+        feature: "users",
       },
       {
         label: "Onboarding",
@@ -149,6 +164,7 @@ export const NAV: NavGroup[] = [
         sources: ["Toll2.0"],
         keywords: ["register", "self-service", "vat", "signup", "wizard"],
         description: "Self-registration & guided setup",
+        feature: "onboarding",
       },
     ],
   },
@@ -185,13 +201,20 @@ export const ALL_NAV_ITEMS: NavItem[] = NAV.flatMap((g) => g.items);
  * Global modules (Support, Account) are returned as a separate "General"
  * group so every portal can reach them without blurring segregation.
  */
-export function navForPortal(portal: SourcePortal): NavGroup[] {
+export function navForPortal(
+  portal: SourcePortal,
+  brand: Partner | null = null
+): NavGroup[] {
   // A switchable portal may span several legacy source portals (post-merge).
   const sources = PORTAL_SOURCES[portal] ?? [portal];
   const scoped = NAV.map((group) => ({
     label: group.label,
     items: group.items.filter(
-      (item) => !item.global && item.sources.some((s) => sources.includes(s))
+      (item) =>
+        !item.global &&
+        item.sources.some((s) => sources.includes(s)) &&
+        (!item.mstsOnly || !brand) &&
+        (!item.feature || featureEnabled(brand, item.feature))
     ),
   })).filter((group) => group.items.length > 0);
 
