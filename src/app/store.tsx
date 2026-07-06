@@ -1,6 +1,7 @@
 import * as React from "react";
-import type { Entity } from "@/lib/types";
+import type { Entity, Partner } from "@/lib/types";
 import type { PortalId } from "./portals";
+import { applyBrandVars } from "@/lib/brand";
 
 export interface AuthUser {
   name: string;
@@ -28,6 +29,9 @@ interface AppState {
   setCommandOpen: (v: boolean) => void;
   theme: "light" | "dark";
   toggleTheme: () => void;
+  /** Active whitelabel partner brand; null = MSTS default. */
+  activeBrand: Partner | null;
+  setActiveBrand: (b: Partner | null) => void;
 }
 
 const AppContext = React.createContext<AppState | null>(null);
@@ -63,6 +67,14 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     root.classList.toggle("dark", theme === "dark");
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
+
+  // Whitelabel: not persisted — like auth, every load starts as MSTS
+  // until the login flow resolves a partner from the URL.
+  const [activeBrand, setActiveBrand] = React.useState<Partner | null>(null);
+
+  React.useEffect(() => {
+    applyBrandVars(activeBrand);
+  }, [activeBrand]);
 
   // Global ⌘K / Ctrl+K to open the command palette.
   React.useEffect(() => {
@@ -108,6 +120,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     setCommandOpen,
     theme,
     toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+    activeBrand,
+    setActiveBrand,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

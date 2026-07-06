@@ -58,6 +58,11 @@ export default {
           sign: "#1B3A8B",
           ok: "#3FB984",
         },
+        brand: {
+          accent: "rgb(var(--brand-accent) / <alpha-value>)",
+          "accent-deep": "rgb(var(--brand-accent-deep) / <alpha-value>)",
+          "on-accent": "rgb(var(--brand-on-accent) / <alpha-value>)",
+        },
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
@@ -117,7 +122,7 @@ export default {
         "signage-stripes":
           "repeating-linear-gradient(90deg,transparent 0 78px,rgba(0,0,0,.045) 78px 80px)",
         "signage-dash":
-          "repeating-linear-gradient(90deg,#FBCE07 0 44px,transparent 44px 84px)",
+          "repeating-linear-gradient(90deg,rgb(var(--brand-accent)) 0 44px,transparent 44px 84px)",
       },
     },
   },

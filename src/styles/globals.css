@@ -53,6 +53,13 @@
     --sidebar-muted: 36 8% 52%;
     --sidebar-active: 49 96% 51%;  /* Shell yellow */
     --sidebar-border: 34 18% 16%;
+
+    /* Whitelabel brand layer — RGB channels so Tailwind opacity
+       modifiers work. Defaults = Shell yellow identity. Overridden
+       at runtime per partner (see lib/brand.ts applyBrandVars). */
+    --brand-accent: 251 206 7;
+    --brand-accent-deep: 240 184 0;
+    --brand-on-accent: 26 23 18;
   }
 
   .dark {
