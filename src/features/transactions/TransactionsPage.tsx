@@ -16,6 +16,7 @@ import { useDebounced } from "@/hooks/useDebounced";
 import { api, buildQuery } from "@/lib/api";
 import { useAppStore } from "@/app/store";
 import { downloadCSV } from "@/lib/download";
+import { exportBrandOf } from "@/lib/brand";
 import { COUNTRIES } from "@/mocks/catalog";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Paginated, Transaction } from "@/lib/types";
@@ -31,7 +32,9 @@ export default function TransactionsPage() {
   const [sort, setSort] = React.useState("-date");
 
   const [exporting, setExporting] = React.useState(false);
-  const entityId = useAppStore().entity?.id;
+  const { entity, activeBrand } = useAppStore();
+  const entityId = entity?.id;
+  const exportBrand = exportBrandOf(activeBrand);
 
   const { data, isLoading } = useTransactions({
     q: debouncedQ,
@@ -61,7 +64,8 @@ export default function TransactionsPage() {
           OBU: t.obuSerial ?? "",
           "Amount (EUR)": t.amount,
           Status: t.status,
-        }))
+        })),
+        exportBrand
       );
       toast.success(`Exported ${all.total.toLocaleString()} transactions`);
     } catch {

@@ -1,4 +1,12 @@
 import { jsPDF } from "jspdf";
+import type { ExportBrand } from "./brand";
+import { hexToChannels } from "./brand";
+
+/** [r,g,b] tuple for jsPDF color setters. */
+function rgbOf(hex: string): [number, number, number] {
+  const [r, g, b] = hexToChannels(hex).split(" ").map(Number);
+  return [r, g, b];
+}
 
 /** Trigger a browser download for a Blob. */
 function saveBlob(blob: Blob, filename: string) {
@@ -19,9 +27,10 @@ function toCells(columns: string[], rows: Row[]): string[][] {
 }
 
 /** Real CSV file from columns + rows. */
-export function downloadCSV(filename: string, columns: string[], rows: Row[]) {
+export function downloadCSV(filename: string, columns: string[], rows: Row[], brand?: ExportBrand) {
   const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const lines = [
+    ...(brand ? [`# ${brand.name} — tolling data export`] : []),
     columns.map(esc).join(","),
     ...toCells(columns, rows).map((cells) => cells.map(esc).join(",")),
   ];
@@ -59,25 +68,29 @@ export function downloadTablePDF(
   title: string,
   columns: string[],
   rows: Row[],
-  subtitle?: string
+  subtitle?: string,
+  brand?: ExportBrand
 ) {
   const doc = new jsPDF({ orientation: columns.length > 6 ? "landscape" : "portrait" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 14;
 
-  // Branded header band
+  // Branded header band (partner brand when licensed, else MSTS)
   doc.setFillColor(22, 19, 16); // asphalt
   doc.rect(0, 0, pageW, 22, "F");
-  doc.setTextColor(251, 206, 7); // shell yellow
+  const accent = brand ? rgbOf(brand.accentColor) : ([251, 206, 7] as [number, number, number]);
+  doc.setFillColor(...accent);
+  doc.rect(0, 22, pageW, 1.5, "F");
+  doc.setTextColor(...accent);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text("MSTS One", margin, 14);
+  doc.text(brand ? brand.name : "MSTS One", margin, 14);
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(10);
   doc.text(title, pageW - margin, 14, { align: "right" });
 
-  let y = 32;
+  let y = 34;
   doc.setTextColor(60, 60, 60);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
@@ -135,6 +148,7 @@ export function downloadDocumentPDF(
     meta: [string, string][];
     lineItems: { label: string; value: string }[];
     total?: { label: string; value: string };
+    brand?: ExportBrand;
   }
 ) {
   const doc = new jsPDF();
@@ -143,10 +157,13 @@ export function downloadDocumentPDF(
 
   doc.setFillColor(22, 19, 16);
   doc.rect(0, 0, pageW, 26, "F");
-  doc.setTextColor(251, 206, 7);
+  const accent = opts.brand ? rgbOf(opts.brand.accentColor) : ([251, 206, 7] as [number, number, number]);
+  doc.setFillColor(...accent);
+  doc.rect(0, 26, pageW, 1.5, "F");
+  doc.setTextColor(...accent);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text("MSTS One", margin, 16);
+  doc.text(opts.brand ? opts.brand.name : "MSTS One", margin, 16);
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(11);
   doc.text(opts.title, pageW - margin, 16, { align: "right" });

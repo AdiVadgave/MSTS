@@ -32,7 +32,7 @@ import { formatDate } from "@/lib/utils";
 import type { ReportDef } from "@/lib/types";
 import { toast } from "sonner";
 import { ScheduledReportsDialog } from "./ScheduledReportsDialog";
-import { featureEnabled } from "@/lib/brand";
+import { featureEnabled, exportBrandOf } from "@/lib/brand";
 import { useAppStore } from "@/app/store";
 
 const CAT_ICON: Record<string, typeof FileText> = {
@@ -45,6 +45,7 @@ const CAT_ICON: Record<string, typeof FileText> = {
 
 export default function ReportsPage() {
   const { activeBrand } = useAppStore();
+  const exportBrand = exportBrandOf(activeBrand);
   const { data: reports, isLoading } = useReports();
   const run = useRunReportData();
   const [cat, setCat] = React.useState("all");
@@ -65,10 +66,10 @@ export default function ReportsPage() {
       const stamped = `${base}_${range.from}_to_${range.to}`;
       const period = `${formatDate(range.from)} – ${formatDate(range.to)}`;
       // Produce a real file from the returned rows, stamped with the period.
-      if (format === "CSV") downloadCSV(`${stamped}.csv`, res.columns, res.rows);
+      if (format === "CSV") downloadCSV(`${stamped}.csv`, res.columns, res.rows, exportBrand);
       else if (format === "XLSX") downloadXLS(`${stamped}.xls`, res.columns, res.rows);
       else if (format === "PDF")
-        downloadTablePDF(`${stamped}.pdf`, r.name, res.columns, res.rows, `Period: ${period} · ${r.description}`);
+        downloadTablePDF(`${stamped}.pdf`, r.name, res.columns, res.rows, `Period: ${period} · ${r.description}`, exportBrand);
       else downloadJSON(`${stamped}.json`, res.rows);
       toast.success(`${r.name} exported`, {
         description: `${period} · ${res.count.toLocaleString()} rows · ${format}`,

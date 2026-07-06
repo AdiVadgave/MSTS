@@ -28,8 +28,10 @@ import { downloadDocumentPDF } from "@/lib/download";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Invoice } from "@/lib/types";
 import { toast } from "sonner";
+import { exportBrandOf, type ExportBrand } from "@/lib/brand";
+import { useAppStore } from "@/app/store";
 
-function invoicePDF(i: Invoice) {
+function invoicePDF(i: Invoice, brand?: ExportBrand) {
   downloadDocumentPDF(`${i.number}.pdf`, {
     title: `Invoice ${i.number}`,
     meta: [
@@ -43,6 +45,7 @@ function invoicePDF(i: Invoice) {
       { label: "VAT (21%)", value: formatCurrency(i.vatAmount) },
     ],
     total: { label: "Total due", value: formatCurrency(i.amount) },
+    brand,
   });
 }
 
@@ -90,6 +93,8 @@ function ConsolidatedInvoice({
 }
 
 export default function FinancePage() {
+  const { activeBrand } = useAppStore();
+  const exportBrand = exportBrandOf(activeBrand);
   const [status, setStatus] = React.useState("all");
   const [page, setPage] = React.useState(1);
   const [sort, setSort] = React.useState("-issuedAt");
@@ -120,6 +125,7 @@ export default function FinancePage() {
         value: formatCurrency(r.spend),
       })),
       total: { label: "Total", value: formatCurrency(total) },
+      brand: exportBrand,
     });
     toast.success("Account statement downloaded", {
       description: `${period} · statement-FLEET-4471.pdf`,
@@ -167,7 +173,7 @@ export default function FinancePage() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onClick={() => {
-                invoicePDF(i);
+                invoicePDF(i, exportBrand);
                 toast.success(`${i.number}.pdf downloaded`);
               }}
             >

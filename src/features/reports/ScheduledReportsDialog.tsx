@@ -20,6 +20,8 @@ import { downloadCSV, downloadXLS, downloadTablePDF } from "@/lib/download";
 import { formatDate } from "@/lib/utils";
 import type { Cadence, ScheduledReport } from "@/lib/types";
 import { toast } from "sonner";
+import { exportBrandOf } from "@/lib/brand";
+import { useAppStore } from "@/app/store";
 
 const CADENCES: { value: Cadence; label: string }[] = [
   { value: "daily", label: "Daily" },
@@ -30,6 +32,8 @@ const CADENCES: { value: Cadence; label: string }[] = [
 export function ScheduledReportsDialog({
   open, onOpenChange,
 }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { activeBrand } = useAppStore();
+  const exportBrand = exportBrandOf(activeBrand);
   const { data: reports } = useReports();
   const { data: schedules, isLoading } = useScheduledReports();
   const create = useCreateSchedule();
@@ -76,9 +80,9 @@ export function ScheduledReportsDialog({
     try {
       const res = await runData.mutateAsync({ id: s.reportId, format: s.format });
       const base = res.fileName.replace(/\.[^.]+$/, "");
-      if (s.format === "CSV") downloadCSV(`${base}.csv`, res.columns, res.rows);
+      if (s.format === "CSV") downloadCSV(`${base}.csv`, res.columns, res.rows, exportBrand);
       else if (s.format === "XLSX") downloadXLS(`${base}.xls`, res.columns, res.rows);
-      else downloadTablePDF(`${base}.pdf`, s.reportName, res.columns, res.rows);
+      else downloadTablePDF(`${base}.pdf`, s.reportName, res.columns, res.rows, undefined, exportBrand);
       await run.mutateAsync(s.id);
       toast.success(`${s.reportName} generated`, { description: `${res.count.toLocaleString()} rows · ${s.format}` });
     } catch {
