@@ -406,6 +406,44 @@ Confirm each portal's sidebar shows **only** these (plus General = Support, Acco
 
 ---
 
+## 22. Whitelabeling (partner branding, packages, tenant isolation)
+
+Partners are seeded in the mock DB (`msts-db` schema **v5**): **Alpine Fleet
+Services** (`alpine`, green, **Enterprise** package, owns entities e1 + e2) and
+**Nordkap Logistik** (`nordkap`, blue, **Basic** package, owns entity e3).
+Entry point is `/login?partner=<slug>`; the login page's domain-simulator
+dropdown fakes picking `tolls.<slug>.com` without changing the URL bar.
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| W1 | Domain simulator → Alpine | Open `/login`, domain dropdown → **Simulate partner domain** → pick `tolls.alpine.com` | Login rebrands: Alpine monogram + green accent on the button/focus ring, domain chip reads `tolls.alpine.com`, footer shows "Powered by MSTS Tolls · whitelabel partner portal" (or Alpine-specific copy) | ☐ |
+| W2 | Direct partner URL | Open `/login?partner=alpine` directly | Same rebranded look as W1, no dropdown interaction needed | ☐ |
+| W3 | Unknown partner slug | Open `/login?partner=bogus` | "This partner portal is unavailable" card renders instead of the login form; domain chip still shows `tolls.bogus.com` | ☐ |
+| W4 | Login with Alpine branding | On `/login?partner=alpine`, sign in with demo creds → MFA `123456` | MFA screen keeps the green focus ring on the 6 code boxes; lands on launcher/portal still Alpine-branded | ☐ |
+| W5 | Sidebar + dashboard branding | Logged in as Alpine, open Toll 2.0 | Sidebar logo/accent and dashboard stat tiles render in Alpine green (not Shell yellow) | ☐ |
+| W6 | Dark mode still works | While Alpine-branded, toggle dark mode | Theme switches correctly; brand accent color persists in dark mode | ☐ |
+| W7 | Package gating — Basic (Nordkap) | Log in via `/login?partner=nordkap`, inspect sidebar + ⌘K | **Transactions, Reports, Finance, Users & Access, Onboarding** are absent from sidebar and ⌘K results; MyMST portal switcher entry is hidden | ☐ |
+| W8 | Package gating — direct URL block | As Nordkap, navigate directly to `/reports` (or `/finance`, `/users`) | Route renders an **UpgradeState** "upgrade to unlock" card instead of the module, no data leak | ☐ |
+| W9 | Package gating — Enterprise (Alpine) | Log in as Alpine | All modules from §20's matrix are visible in sidebar + ⌘K; no UpgradeState anywhere | ☐ |
+| W10 | Tenant isolation — Alpine | As Alpine, open the entity switcher | Only **e1 (NVD Stage BP 1)** and **e2 (Automation Foreign Std)** are listed; Vehicles/Transactions/etc. counts match §8's per-entity golden numbers for e1/e2 | ☐ |
+| W11 | Tenant isolation — Nordkap | As Nordkap, open the entity switcher | Only **e3 (Meridian Logistics)** is listed; counts match §8's e3 golden numbers; no e1/e2 data visible anywhere | ☐ |
+| W12 | Admin console — list | Log in as MSTS default, open **/partners** | List shows Alpine + Nordkap with logo/swatch, package badge, entity count, status | ☐ |
+| W13 | Admin — create partner | **Add partner** → fill slug/name/package/accent → save | New partner appears in the list; persists across reload | ☐ |
+| W14 | Admin — slug collision | Try creating a partner with slug `alpine` (existing) | Inline validation error; save blocked | ☐ |
+| W15 | Admin — logo upload size guard | Editor sheet → Branding tab → upload an image **> 200 KB** | Rejected with a size-limit error; existing logo unchanged | ☐ |
+| W16 | Admin — package comparison | Editor sheet → Package tab | Feature comparison grid shows Basic vs Enterprise flags; changing package updates the partner's gating live after save | ☐ |
+| W17 | Admin — entity reassignment | Editor sheet → Entities tab → move e2 from Alpine to Nordkap → save | Ownership moves: Alpine's entity switcher now shows only e1; Nordkap's shows e2 + e3 | ☐ |
+| W18 | Admin — preview | Editor sheet → **Preview** | Opens/renders the partner's branded login look without leaving the admin session | ☐ |
+| W19 | Admin — suspend | Partner row menu → **Suspend** | Status → Suspended; partner disappears from the `/login` domain-simulator picker; `/login?partner=<slug>` now shows the unavailable card | ☐ |
+| W20 | Admin — delete | Partner row menu → **Delete** → confirm | Partner removed from list and picker; persists across reload | ☐ |
+| W21 | Persistence across reload | After W13/W17/W19, hard refresh and re-open **/partners** | All changes (new partner, reassigned entity, suspended status) survive reload (`msts-db` v5 in localStorage) | ☐ |
+| W22 | Branded export — PDF | As Alpine, with `branded-invoicing` enabled for the package, Reports/Finance → **Export as PDF** | PDF header band shows Alpine branding; a thin accent bar under the header uses Alpine green | ☐ |
+| W23 | Branded export — CSV | As Alpine → **Export CSV** | CSV includes an Alpine-branded comment/header line | ☐ |
+| W24 | MSTS default export unchanged | As the default MSTS login (no partner param) → export PDF/CSV | Exports still say **"MSTS One"**; PDF shows the same thin accent bar (Shell yellow) — this is a new, plan-mandated element and not a regression | ☐ |
+| W25 | MSTS default login/portal unchanged | Open `/login` with no `partner` param | Login and portal look identical to the pre-whitelabeling baseline (Shell yellow/asphalt, MSTS branding, no domain-simulator side effects) | ☐ |
+
+---
+
 ## Notes / defect log
 
 | ID | Severity | Area | Description | Repro |
