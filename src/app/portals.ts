@@ -28,15 +28,15 @@ export const PORTALS: Record<PortalId, PortalDef> = {
   MyTolls: {
     id: "MyTolls",
     name: "MyTolls",
-    tagline: "Fleet, hauliers & tolling products",
+    tagline: "Fleet, devices, tolling & administration",
     blurb:
-      "Manage vehicles and owners, run AI RC-card extraction, and order or block tolling products across Europe.",
+      "The unified operations portal — fleet KPIs, vehicles and hauliers, OBUs & devices, tolling products, toll domains, onboarding and user access.",
     home: "/",
     icon: Truck,
     accent: "#2563eb",
     cardClass: "from-blue-500/15 to-blue-500/0 ring-blue-500/30",
     chipClass: "bg-blue-50 text-blue-700 ring-blue-200",
-    highlights: ["Vehicles", "Hauliers", "Products & Ordering"],
+    highlights: ["Dashboard", "Vehicles", "OBU & Devices", "Products", "Domains", "Users"],
   },
   MyMST: {
     id: "MyMST",
@@ -66,8 +66,16 @@ export const PORTALS: Record<PortalId, PortalDef> = {
   },
 };
 
-export const PORTAL_LIST: PortalDef[] = [
-  PORTALS.MyTolls,
-  PORTALS.MyMST,
-  PORTALS["Toll2.0"],
-];
+/**
+ * Post-merge mapping: which legacy source portals each switchable portal now
+ * contains. MyTolls has absorbed Toll 2.0, so it surfaces both source sets;
+ * the standalone "Toll2.0" key is kept only as an alias for any legacy state.
+ */
+export const PORTAL_SOURCES: Record<PortalId, SourcePortal[]> = {
+  MyTolls: ["MyTolls", "Toll2.0"],
+  "Toll2.0": ["MyTolls", "Toll2.0"],
+  MyMST: ["MyMST"],
+};
+
+/** Portals a user can switch between (Toll 2.0 is merged into MyTolls). */
+export const PORTAL_LIST: PortalDef[] = [PORTALS.MyTolls, PORTALS.MyMST];

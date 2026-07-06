@@ -4,7 +4,6 @@ import { useAppStore } from "./store";
 import { PORTALS } from "./portals";
 import LoginPage from "@/features/auth/LoginPage";
 import MfaPage from "@/features/auth/MfaPage";
-import PortalLauncher from "@/features/launcher/PortalLauncher";
 import DashboardPage from "@/features/dashboard/DashboardPage";
 import VehiclesPage from "@/features/vehicles/VehiclesPage";
 import ObusPage from "@/features/obus/ObusPage";
@@ -22,10 +21,11 @@ import NotFoundPage from "@/features/misc/NotFoundPage";
 
 /** Gate the app shell behind login → MFA → portal selection. */
 function RequireApp() {
-  const { user, mfaVerified, activePortal } = useAppStore();
+  const { user, mfaVerified } = useAppStore();
   if (!user) return <Navigate to="/login" replace />;
   if (!mfaVerified) return <Navigate to="/mfa" replace />;
-  if (!activePortal) return <Navigate to="/launcher" replace />;
+  // Portal selection removed: MFA verification defaults the active portal, so
+  // the app shell renders directly. The top bar toggles MyTolls / MyMST.
   return <AppLayout />;
 }
 
@@ -44,7 +44,6 @@ function PortalIndex() {
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/mfa", element: <MfaPage /> },
-  { path: "/launcher", element: <PortalLauncher /> },
   {
     path: "/",
     element: <RequireApp />,

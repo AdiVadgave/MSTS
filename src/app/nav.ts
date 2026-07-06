@@ -15,6 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { SourcePortal } from "@/lib/types";
+import { PORTAL_SOURCES } from "./portals";
 
 export interface NavItem {
   label: string;
@@ -185,10 +186,12 @@ export const ALL_NAV_ITEMS: NavItem[] = NAV.flatMap((g) => g.items);
  * group so every portal can reach them without blurring segregation.
  */
 export function navForPortal(portal: SourcePortal): NavGroup[] {
+  // A switchable portal may span several legacy source portals (post-merge).
+  const sources = PORTAL_SOURCES[portal] ?? [portal];
   const scoped = NAV.map((group) => ({
     label: group.label,
     items: group.items.filter(
-      (item) => !item.global && item.sources.includes(portal)
+      (item) => !item.global && item.sources.some((s) => sources.includes(s))
     ),
   })).filter((group) => group.items.length > 0);
 

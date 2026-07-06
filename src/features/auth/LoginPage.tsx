@@ -17,7 +17,7 @@ export default function LoginPage() {
   const [busy, setBusy] = React.useState(false);
 
   // Already signed in → skip ahead.
-  if (user) return <Navigate to={mfaVerified ? "/launcher" : "/mfa"} replace />;
+  if (user) return <Navigate to={mfaVerified ? "/" : "/mfa"} replace />;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();

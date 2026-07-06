@@ -85,7 +85,12 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       setMfaVerified(false);
       setActivePortal(null);
     },
-    verifyMfa: () => setMfaVerified(true),
+    verifyMfa: () => {
+      setMfaVerified(true);
+      // Portal selection has been removed — land straight in the app on a
+      // default portal. The top bar toggle switches between MyTolls and MyMST.
+      setActivePortal((p) => p ?? "MyTolls");
+    },
     selectPortal: (p) => setActivePortal(p),
     leavePortal: () => setActivePortal(null),
     signOut: () => {

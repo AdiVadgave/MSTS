@@ -18,13 +18,17 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Field } from "@/components/common/Field";
+import { DateRangeDialog, type DateRangeValue } from "@/components/common/DateRangeDialog";
 import { useReports, useRunReportData } from "@/hooks/api";
 import { downloadCSV, downloadTablePDF, downloadXLS, downloadJSON } from "@/lib/download";
+import { formatDate } from "@/lib/utils";
 import type { ReportDef } from "@/lib/types";
 import { toast } from "sonner";
 import { ScheduledReportsDialog } from "./ScheduledReportsDialog";
@@ -43,23 +47,28 @@ export default function ReportsPage() {
   const [cat, setCat] = React.useState("all");
   const [runningId, setRunningId] = React.useState<string | null>(null);
   const [scheduleOpen, setScheduleOpen] = React.useState(false);
+  // Report currently being configured in the parameters dialog.
+  const [paramReport, setParamReport] = React.useState<ReportDef | null>(null);
+  const [paramFormat, setParamFormat] = React.useState("CSV");
 
   const categories = ["all", "Transactions", "Financial", "Fleet", "Toll"];
   const filtered = reports?.filter((r) => cat === "all" || r.category === cat) ?? [];
 
-  const doRun = async (r: ReportDef, format: string) => {
+  const doRun = async (r: ReportDef, format: string, range: DateRangeValue) => {
     setRunningId(r.id + format);
     try {
       const res = await run.mutateAsync({ id: r.id, format });
       const base = res.fileName.replace(/\.[^.]+$/, "");
-      // Produce a real file from the returned rows.
-      if (format === "CSV") downloadCSV(`${base}.csv`, res.columns, res.rows);
-      else if (format === "XLSX") downloadXLS(`${base}.xls`, res.columns, res.rows);
+      const stamped = `${base}_${range.from}_to_${range.to}`;
+      const period = `${formatDate(range.from)} – ${formatDate(range.to)}`;
+      // Produce a real file from the returned rows, stamped with the period.
+      if (format === "CSV") downloadCSV(`${stamped}.csv`, res.columns, res.rows);
+      else if (format === "XLSX") downloadXLS(`${stamped}.xls`, res.columns, res.rows);
       else if (format === "PDF")
-        downloadTablePDF(`${base}.pdf`, r.name, res.columns, res.rows, r.description);
-      else downloadJSON(`${base}.json`, res.rows);
+        downloadTablePDF(`${stamped}.pdf`, r.name, res.columns, res.rows, `Period: ${period} · ${r.description}`);
+      else downloadJSON(`${stamped}.json`, res.rows);
       toast.success(`${r.name} exported`, {
-        description: `${res.fileName} · ${res.count.toLocaleString()} rows downloaded`,
+        description: `${period} · ${res.count.toLocaleString()} rows · ${format}`,
       });
     } catch {
       toast.error("Export failed. Please try again.");
@@ -117,21 +126,17 @@ export default function ReportsPage() {
                           </span>
                         ))}
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="sm" disabled={busy}>
-                            {busy ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-                            Run
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {r.formats.map((f) => (
-                            <DropdownMenuItem key={f} onClick={() => doRun(r, f)}>
-                              <Download /> Export as {f}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button
+                        size="sm"
+                        disabled={busy}
+                        onClick={() => {
+                          setParamReport(r);
+                          setParamFormat(r.formats[0]);
+                        }}
+                      >
+                        {busy ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+                        Run
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -140,6 +145,33 @@ export default function ReportsPage() {
       </div>
 
       <ScheduledReportsDialog open={scheduleOpen} onOpenChange={setScheduleOpen} />
+
+      <DateRangeDialog
+        open={!!paramReport}
+        onOpenChange={(v) => { if (!v) setParamReport(null); }}
+        title="Report parameters"
+        description={paramReport ? `Choose the reporting period for “${paramReport.name}”.` : undefined}
+        confirmLabel="Run & export"
+        confirmIcon={<Download className="size-4" />}
+        busy={run.isPending}
+        onConfirm={async (range) => {
+          const r = paramReport;
+          if (!r) return;
+          await doRun(r, paramFormat, range);
+          setParamReport(null);
+        }}
+      >
+        <Field label="Format">
+          <Select value={paramFormat} onValueChange={setParamFormat}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {paramReport?.formats.map((f) => (
+                <SelectItem key={f} value={f}>{f}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </DateRangeDialog>
     </div>
   );
 }

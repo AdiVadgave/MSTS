@@ -115,7 +115,7 @@ export function seedData(): DBShape {
       ownerId: owner.id,
       products: faker.helpers.arrayElements(PRODUCTS, { min: 0, max: 4 }).map((p) => p.code),
       createdAt: iso(created),
-      updatedAt: iso(faker.date.between({ from: created, to: new Date("2026-06-30") })),
+      updatedAt: iso(faker.date.between({ from: created, to: new Date() })),
     };
   });
 
@@ -241,7 +241,7 @@ export function seedData(): DBShape {
       status: faker.helpers.arrayElement(["submitted", "processing", "fulfilled", "shipped", "fulfilled"]),
       total: +(p.deposit * qty + p.monthlyFee * qty).toFixed(2),
       createdAt: iso(created),
-      updatedAt: iso(faker.date.between({ from: created, to: new Date("2026-06-30") })),
+      updatedAt: iso(faker.date.between({ from: created, to: new Date() })),
     };
   });
 

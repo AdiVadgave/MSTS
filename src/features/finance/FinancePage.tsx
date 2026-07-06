@@ -14,6 +14,7 @@ import { FilterSelect } from "@/components/common/FilterSelect";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { SourceTag } from "@/components/common/SourceTag";
 import { StatCard } from "@/components/common/StatCard";
+import { DateRangeDialog, type DateRangeValue } from "@/components/common/DateRangeDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -95,10 +96,35 @@ export default function FinancePage() {
   const { data, isLoading } = useInvoices({ status, page, pageSize: 10, sort });
   const { data: byCountry } = useSpendByCountry();
   const action = useInvoiceAction();
+  const [stmtOpen, setStmtOpen] = React.useState(false);
 
   const act = async (id: string, a: "pay" | "dispute", label: string) => {
     await action.mutateAsync({ id, action: a });
     toast.success(label);
+  };
+
+  // Generate the consolidated account statement for the chosen period.
+  const generateStatement = (range: DateRangeValue) => {
+    const list = byCountry ?? [];
+    const total = list.reduce((s, r) => s + r.spend, 0);
+    const period = `${formatDate(range.from)} – ${formatDate(range.to)}`;
+    downloadDocumentPDF(`statement-FLEET-4471_${range.from}_to_${range.to}.pdf`, {
+      title: "Account statement",
+      meta: [
+        ["Account", "FLEET-4471"],
+        ["Period", period],
+        ["Generated", formatDate(new Date())],
+      ],
+      lineItems: list.map((r) => ({
+        label: COUNTRIES.find((c) => c.code === r.country)?.name ?? r.country,
+        value: formatCurrency(r.spend),
+      })),
+      total: { label: "Total", value: formatCurrency(total) },
+    });
+    toast.success("Account statement downloaded", {
+      description: `${period} · statement-FLEET-4471.pdf`,
+    });
+    setStmtOpen(false);
   };
 
   // Roll-up across the loaded page for the KPI tiles.
@@ -174,27 +200,7 @@ export default function FinancePage() {
         description="One consolidated toll invoice per period — split any way you need."
         badge={<SourceTag source="MyMST" />}
         actions={
-          <Button
-            variant="outline"
-            onClick={() => {
-              const rows = byCountry ?? [];
-              const total = rows.reduce((s, r) => s + r.spend, 0);
-              downloadDocumentPDF("statement-FLEET-4471.pdf", {
-                title: "Account statement",
-                meta: [
-                  ["Account", "FLEET-4471"],
-                  ["Period", "March 2026"],
-                  ["Generated", formatDate(new Date())],
-                ],
-                lineItems: rows.map((r) => ({
-                  label: COUNTRIES.find((c) => c.code === r.country)?.name ?? r.country,
-                  value: formatCurrency(r.spend),
-                })),
-                total: { label: "Total", value: formatCurrency(total) },
-              });
-              toast.success("Account statement downloaded", { description: "statement-FLEET-4471.pdf" });
-            }}
-          >
+          <Button variant="outline" onClick={() => setStmtOpen(true)}>
             <Download /> Statement
           </Button>
         }
@@ -236,6 +242,16 @@ export default function FinancePage() {
             />
           </div>
         }
+      />
+
+      <DateRangeDialog
+        open={stmtOpen}
+        onOpenChange={setStmtOpen}
+        title="Statement parameters"
+        description="Select the billing period to include in the account statement."
+        confirmLabel="Generate statement"
+        confirmIcon={<Download className="size-4" />}
+        onConfirm={generateStatement}
       />
     </div>
   );

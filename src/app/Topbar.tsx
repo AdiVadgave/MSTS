@@ -1,4 +1,4 @@
-import { Menu, Search, Bell, Sun, Moon, Check, ChevronsUpDown, LogOut, User as UserIcon, Building, CheckCheck, LayoutGrid } from "lucide-react";
+import { Menu, Search, Bell, Sun, Moon, Check, ChevronsUpDown, LogOut, User as UserIcon, Building, CheckCheck, ArrowLeftRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAppStore } from "./store";
@@ -43,7 +43,6 @@ export function Topbar() {
     user,
     activePortal,
     selectPortal,
-    leavePortal,
   } = useAppStore();
   const navigate = useNavigate();
   const { data: entities } = useEntities();
@@ -51,6 +50,9 @@ export function Topbar() {
   const markRead = useMarkNotificationsRead();
   const [entityOpen, setEntityOpen] = React.useState(false);
   const portal = activePortal ? PORTALS[activePortal] : null;
+  // Post-merge there are exactly two portals, so the switcher is a single
+  // toggle: it shows the *other* portal and hops straight to it.
+  const otherPortal = PORTAL_LIST.find((p) => p.id !== activePortal) ?? null;
 
   // Restore the last-selected entity on load, else default to the first.
   React.useEffect(() => {
@@ -72,53 +74,20 @@ export function Topbar() {
         <Menu />
       </Button>
 
-      {/* Portal switcher — preserves each portal's identity + easy hopping */}
-      {portal && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 text-sm shadow-sm transition-colors hover:bg-secondary">
-              <span className="size-2.5 shrink-0 rounded-full" style={{ background: portal.accent }} />
-              <span className="font-semibold">{portal.name}</span>
-              <ChevronsUpDown className="size-3.5 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-64">
-            <DropdownMenuLabel className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Switch portal
-            </DropdownMenuLabel>
-            {PORTAL_LIST.map((p) => (
-              <DropdownMenuItem
-                key={p.id}
-                onClick={() => {
-                  selectPortal(p.id);
-                  navigate(p.home);
-                }}
-                className="gap-2"
-              >
-                <span className="size-2.5 shrink-0 rounded-full" style={{ background: p.accent }} />
-                <span className="flex-1">
-                  <span className="block font-medium">{p.name}</span>
-                  <span className="block text-xs text-muted-foreground">{p.tagline}</span>
-                </span>
-                <Check
-                  className={cn(
-                    "size-4 shrink-0 text-primary",
-                    activePortal === p.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => {
-                leavePortal();
-                navigate("/launcher");
-              }}
-            >
-              <LayoutGrid /> All portals
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+      {/* Portal switcher — one-tap toggle to the other portal */}
+      {portal && otherPortal && (
+        <button
+          onClick={() => {
+            selectPortal(otherPortal.id);
+            navigate(otherPortal.home);
+          }}
+          title={`Switch to ${otherPortal.name}`}
+          className="flex items-center gap-2 rounded-lg border bg-card px-2.5 py-1.5 text-sm shadow-sm transition-colors hover:bg-secondary"
+        >
+          <ArrowLeftRight className="size-3.5 text-muted-foreground" />
+          <span className="size-2.5 shrink-0 rounded-full" style={{ background: otherPortal.accent }} />
+          <span className="font-semibold">{otherPortal.name}</span>
+        </button>
       )}
 
       {/* Entity switcher */}

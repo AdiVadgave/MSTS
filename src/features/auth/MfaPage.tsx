@@ -22,7 +22,7 @@ export default function MfaPage() {
 
   // Guard: must have completed step 1; don't repeat if already verified.
   if (!user) return <Navigate to="/login" replace />;
-  if (mfaVerified) return <Navigate to="/launcher" replace />;
+  if (mfaVerified) return <Navigate to="/" replace />;
 
   const code = digits.join("");
 
@@ -66,7 +66,7 @@ export default function MfaPage() {
     setBusy(true);
     window.setTimeout(() => {
       verifyMfa();
-      navigate("/launcher");
+      navigate("/");
     }, 550);
   };
 
