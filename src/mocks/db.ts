@@ -10,6 +10,7 @@ import type {
   NotificationItem,
   OBU,
   Order,
+  Partner,
   Profile,
   ScheduledReport,
   Settings,
@@ -19,6 +20,7 @@ import type {
   User,
   Vehicle,
 } from "@/lib/types";
+import { PACKAGE_FEATURES } from "@/lib/brand";
 
 const COUNTRY_CODES: Country[] = [
   "NL", "DE", "BE", "FR", "IT", "AT", "PL", "CZ", "HU", "BG", "ES",
@@ -52,6 +54,7 @@ export interface DBShape {
   activity: ActivityEvent[];
   tickets: SupportTicket[];
   scheduledReports: ScheduledReport[];
+  partners: Partner[];
   profile: Profile;
   settings: Settings;
 }
@@ -296,10 +299,35 @@ export function seedData(): DBShape {
     };
   });
 
+  const partners: Partner[] = [
+    {
+      id: "ptr_alpine",
+      name: "Alpine Fleet Services",
+      slug: "alpine",
+      accentColor: "#2F7D4F",
+      package: "enterprise",
+      features: PACKAGE_FEATURES.enterprise,
+      status: "active",
+      entityIds: ["e1", "e2"],
+      createdAt: iso(faker.date.past({ years: 1 })),
+    },
+    {
+      id: "ptr_nordkap",
+      name: "Nordkap Logistik",
+      slug: "nordkap",
+      accentColor: "#1B5FAA",
+      package: "basic",
+      features: PACKAGE_FEATURES.basic,
+      status: "active",
+      entityIds: ["e3"],
+      createdAt: iso(faker.date.past({ years: 1 })),
+    },
+  ];
+
   return {
     entities, hauliers, vehicles, obus, domains, transactions,
     invoices, users, orders, notifications, activity,
-    tickets: [], scheduledReports, profile, settings,
+    tickets: [], scheduledReports, partners, profile, settings,
   };
 }
 

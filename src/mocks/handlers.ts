@@ -13,8 +13,11 @@ import type {
   Entity,
   SupportTicket,
   ScheduledReport,
+  Partner,
+  PartnerPackage,
   Cadence,
 } from "@/lib/types";
+import { PACKAGE_FEATURES } from "@/lib/brand";
 
 const now = () => new Date().toISOString();
 const rid = (p: string) =>
@@ -28,6 +31,16 @@ function monthKey(d: Date) {
 /** Filter any entity-owned collection by the active entity (or pass through). */
 function scopeByEntity<T extends { entityId: string }>(rows: T[], eid: string | null): T[] {
   return eid ? rows.filter((r) => r.entityId === eid) : rows;
+}
+
+/** An entity belongs to at most one partner: taking entities for
+ *  `partnerId` removes them from every other partner. */
+function claimEntities(partnerId: string, entityIds: string[]): void {
+  db.partners.forEach((p) => {
+    if (p.id !== partnerId) {
+      p.entityIds = p.entityIds.filter((id) => !entityIds.includes(id));
+    }
+  });
 }
 
 /** Next run timestamp from a cadence, measured from `from`. */
@@ -799,6 +812,72 @@ export const handlers = [
     await latency();
     const idx = db.scheduledReports.findIndex((x) => x.id === params.id);
     if (idx >= 0) db.scheduledReports.splice(idx, 1);
+    persist();
+    return HttpResponse.json({ ok: true });
+  }),
+
+  // ── Whitelabel partners ──────────────────────────────────────────
+  http.get("/api/partners", async () => {
+    await latency();
+    return HttpResponse.json(db.partners);
+  }),
+  http.post("/api/partners", async ({ request }) => {
+    await latency();
+    const body = (await request.json()) as Partial<Partner>;
+    const name = body.name?.trim();
+    const slug = body.slug?.trim();
+    if (!name || !slug) {
+      return HttpResponse.json({ error: "Name and slug are required" }, { status: 422 });
+    }
+    if (db.partners.some((p) => p.slug === slug)) {
+      return HttpResponse.json({ error: "Slug is already in use" }, { status: 422 });
+    }
+    const pkg = (body.package ?? "basic") as PartnerPackage;
+    const partner: Partner = {
+      id: rid("ptr"),
+      name,
+      slug,
+      logoDataUrl: body.logoDataUrl,
+      accentColor: body.accentColor ?? "#1B5FAA",
+      package: pkg,
+      features: body.features ?? PACKAGE_FEATURES[pkg],
+      status: body.status ?? "active",
+      entityIds: body.entityIds ?? [],
+      createdAt: now(),
+    };
+    claimEntities(partner.id, partner.entityIds);
+    db.partners.unshift(partner);
+    persist();
+    return HttpResponse.json(partner, { status: 201 });
+  }),
+  http.patch("/api/partners/:id", async ({ params, request }) => {
+    await latency();
+    const p = db.partners.find((x) => x.id === params.id);
+    if (!p) return new HttpResponse(null, { status: 404 });
+    const body = (await request.json()) as Partial<Partner>;
+    if (body.slug && body.slug !== p.slug && db.partners.some((x) => x.slug === body.slug)) {
+      return HttpResponse.json({ error: "Slug is already in use" }, { status: 422 });
+    }
+    if (body.name !== undefined) p.name = body.name;
+    if (body.slug !== undefined) p.slug = body.slug;
+    if (body.logoDataUrl !== undefined) p.logoDataUrl = body.logoDataUrl || undefined;
+    if (body.accentColor !== undefined) p.accentColor = body.accentColor;
+    if (body.package !== undefined) p.package = body.package;
+    if (body.features !== undefined) p.features = body.features;
+    if (body.status !== undefined) p.status = body.status;
+    if (body.entityIds !== undefined) {
+      p.entityIds = body.entityIds;
+      claimEntities(p.id, p.entityIds);
+    }
+    persist();
+    return HttpResponse.json(p);
+  }),
+  http.delete("/api/partners/:id", async ({ params }) => {
+    await latency();
+    const idx = db.partners.findIndex((x) => x.id === params.id);
+    // Ownership lives only on the record, so removal releases its
+    // entities back to MSTS implicitly.
+    if (idx >= 0) db.partners.splice(idx, 1);
     persist();
     return HttpResponse.json({ ok: true });
   }),

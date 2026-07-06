@@ -14,6 +14,7 @@ import type {
   OBU,
   Order,
   Paginated,
+  Partner,
   Profile,
   ReportDef,
   ScheduledReport,
@@ -450,6 +451,35 @@ export function useCreateTicket() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tickets"] }),
   });
 }
+
+// ── Whitelabel partners ────────────────────────────────────────
+export const usePartners = () =>
+  useQuery({ queryKey: ["partners"], queryFn: () => api.get<Partner[]>("/api/partners") });
+
+export const useCreatePartner = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Partial<Partner>) => api.post<Partner>("/api/partners", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["partners"] }),
+  });
+};
+
+export const useUpdatePartner = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Partial<Partner>) =>
+      api.patch<Partner>(`/api/partners/${id}`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["partners"] }),
+  });
+};
+
+export const useDeletePartner = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.del(`/api/partners/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["partners"] }),
+  });
+};
 
 // ── System: reset demo data ────────────────────────────────────
 export function useResetDemoData() {

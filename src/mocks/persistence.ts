@@ -6,7 +6,8 @@
 const STORAGE_KEY = "msts-db";
 // v3: every record carries an `entityId` for customer scoping.
 // v4: added the scheduledReports collection.
-const VERSION = 4;
+// v5: added the whitelabel partners collection.
+const VERSION = 5;
 
 interface Envelope<T> {
   __v: number;
