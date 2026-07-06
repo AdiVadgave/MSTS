@@ -15,6 +15,7 @@ import ReportsPage from "@/features/reports/ReportsPage";
 import FinancePage from "@/features/finance/FinancePage";
 import UsersPage from "@/features/users/UsersPage";
 import OnboardingPage from "@/features/onboarding/OnboardingPage";
+import PartnersPage from "@/features/partners/PartnersPage";
 import SupportPage from "@/features/support/SupportPage";
 import AccountPage from "@/features/account/AccountPage";
 import NotFoundPage from "@/features/misc/NotFoundPage";
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
       { path: "finance", element: <FeatureGate feature="finance" moduleName="Invoices & AR"><FinancePage /></FeatureGate> },
       { path: "users", element: <FeatureGate feature="users" moduleName="Users & Access"><UsersPage /></FeatureGate> },
       { path: "onboarding", element: <FeatureGate feature="onboarding" moduleName="Onboarding"><OnboardingPage /></FeatureGate> },
+      { path: "partners", element: <PartnersPage /> },
       { path: "support", element: <SupportPage /> },
       { path: "account", element: <AccountPage /> },
       { path: "*", element: <NotFoundPage /> },

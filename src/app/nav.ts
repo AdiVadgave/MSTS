@@ -12,6 +12,7 @@ import {
   UserPlus,
   LifeBuoy,
   Settings,
+  Palette,
   type LucideIcon,
 } from "lucide-react";
 import type { FeatureFlag, Partner, SourcePortal } from "@/lib/types";
@@ -165,6 +166,15 @@ export const NAV: NavGroup[] = [
         keywords: ["register", "self-service", "vat", "signup", "wizard"],
         description: "Self-registration & guided setup",
         feature: "onboarding",
+      },
+      {
+        label: "Whitelabel Partners",
+        to: "/partners",
+        icon: Palette,
+        sources: ["MyTolls"],
+        keywords: ["reseller", "brand", "whitelabel", "package", "tenant"],
+        description: "Partner branding, packages & tenants",
+        mstsOnly: true,
       },
     ],
   },
