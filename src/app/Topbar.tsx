@@ -43,6 +43,7 @@ export function Topbar() {
     user,
     activePortal,
     selectPortal,
+    activeBrand,
   } = useAppStore();
   const navigate = useNavigate();
   const { data: entities } = useEntities();
@@ -54,12 +55,25 @@ export function Topbar() {
   // toggle: it shows the *other* portal and hops straight to it.
   const otherPortal = PORTAL_LIST.find((p) => p.id !== activePortal) ?? null;
 
-  // Restore the last-selected entity on load, else default to the first.
+  // Entities visible in this portal: a partner sees only the customer
+  // entities it owns (tenant isolation); MSTS sees everything.
+  const visibleEntities = React.useMemo(
+    () =>
+      activeBrand
+        ? (entities ?? []).filter((e) => activeBrand.entityIds.includes(e.id))
+        : entities ?? [],
+    [entities, activeBrand]
+  );
+
+  // Restore the last-selected entity on load (when it's visible),
+  // else default to the first visible one. Also corrects the selection
+  // whenever the active brand changes.
   React.useEffect(() => {
-    if (entity || !entities?.length) return;
+    if (!visibleEntities.length) return;
+    if (entity && visibleEntities.some((e) => e.id === entity.id)) return;
     const savedId = localStorage.getItem("msts-entity");
-    setEntity(entities.find((e) => e.id === savedId) ?? entities[0]);
-  }, [entities, entity, setEntity]);
+    setEntity(visibleEntities.find((e) => e.id === savedId) ?? visibleEntities[0]);
+  }, [visibleEntities, entity, setEntity]);
 
   const unread = notifications?.filter((n) => !n.read).length ?? 0;
 
@@ -105,7 +119,7 @@ export function Topbar() {
           <p className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Switch entity
           </p>
-          {entities?.map((e) => (
+          {visibleEntities.map((e) => (
             <button
               key={e.id}
               onClick={() => {
@@ -244,7 +258,7 @@ export function Topbar() {
               onClick={() => {
                 signOut();
                 toast.success("You've been signed out");
-                navigate("/login");
+                navigate(activeBrand ? `/login?partner=${activeBrand.slug}` : "/login");
               }}
             >
               <LogOut /> Sign out
