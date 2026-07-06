@@ -2,7 +2,8 @@ import { NavLink } from "react-router-dom";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { navForPortal, NAV } from "./nav";
 import { PORTALS } from "./portals";
-import { Logo, LogoMark } from "@/components/brand/Logo";
+import { LogoMark } from "@/components/brand/Logo";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { useAppStore } from "./store";
 import {
   Tooltip,
@@ -30,7 +31,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <LogoMark />
         ) : (
           <div className="flex min-w-0 items-center gap-2">
-            <Logo className="h-6" />
+            <BrandLogo className="h-6" />
             <span
               className="truncate rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
               style={{ background: portal ? portal.accent : "rgba(255,255,255,0.1)" }}

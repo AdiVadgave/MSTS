@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Logo } from "@/components/brand/Logo";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { useAppStore } from "@/app/store";
 
 /** Shared branded frame for the login / MFA screens. */
 export function AuthShell({
@@ -7,22 +8,27 @@ export function AuthShell({
   subtitle,
   children,
   footer,
+  beforeCard,
 }: {
   title: string;
   subtitle: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Slot above the card — e.g. the partner-domain simulator. */
+  beforeCard?: React.ReactNode;
 }) {
+  const { activeBrand } = useAppStore();
   return (
     <div className="grid min-h-dvh place-items-center bg-shell-asphalt p-6 text-shell-paper">
       <div className="ruler-bg pointer-events-none fixed inset-0 opacity-30" />
       <div className="relative w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <Logo className="h-7" />
+          <BrandLogo className="h-7" />
           <span className="rounded bg-white/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white/70">
-            One · Unified portal
+            {activeBrand ? "Partner tolling portal" : "One · Unified portal"}
           </span>
         </div>
+        {beforeCard}
         <div className="relative overflow-hidden rounded-2xl border border-shell-asphalt-line bg-shell-asphalt-2 p-8 shadow-[0_40px_80px_-32px_rgba(0,0,0,0.6)]">
           <div className="absolute inset-x-0 top-0 h-1 bg-signage-dash" />
           <h1 className="font-display text-2xl font-black">{title}</h1>
