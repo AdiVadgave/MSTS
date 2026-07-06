@@ -38,9 +38,20 @@ export interface ListArgs {
   [key: string]: unknown;
 }
 
-/** The active entity id from the app store (used to scope data per customer). */
+/**
+ * The active entity id from the app store (used to scope data per customer).
+ * Under a whitelabel partner brand this fails CLOSED: until a valid
+ * partner-owned entity is selected, queries scope to a sentinel that
+ * matches no rows — a partner must never see another tenant's data.
+ */
 function useEntityId(): string | undefined {
-  return useAppStore().entity?.id;
+  const { entity, activeBrand } = useAppStore();
+  if (activeBrand) {
+    return entity && activeBrand.entityIds.includes(entity.id)
+      ? entity.id
+      : "__none__";
+  }
+  return entity?.id;
 }
 
 /** Merge the active entity id into list args so queries scope + refetch on switch. */

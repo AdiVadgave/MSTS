@@ -89,11 +89,11 @@ export default function ReportsPage() {
         description="Standard, custom and scheduled reports. Export to CSV, PDF or Excel."
         badge={<SourceTag source="MyMST" />}
         actions={
-          featureEnabled(activeBrand, "scheduled-reports") && (
+          featureEnabled(activeBrand, "scheduled-reports") ? (
             <Button variant="outline" onClick={() => setScheduleOpen(true)}>
               <CalendarClock /> Scheduled reports
             </Button>
-          )
+          ) : undefined
         }
       />
 

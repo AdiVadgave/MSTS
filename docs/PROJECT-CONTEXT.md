@@ -269,7 +269,10 @@ notifications, activity, and a few scheduled reports.
 - **Real:** all CRUD + persistence, entity scoping, eligibility enforcement,
   file exports (CSV/XLS/PDF), RC-card extraction (Azure GPT-4o when keys set).
 - **Simulated (no backend):** login / MFA / password / 2FA, "resend code",
-  "resend invite" (no email), scheduled reports don't fire on a real timer.
+  "resend invite" (no email), scheduled reports don't fire on a real timer;
+  multi-tab demo caveat — each tab hydrates the mock DB from localStorage
+  once, so mutations in a partner-preview tab and the admin tab can
+  overwrite each other; refresh the other tab after cross-tab changes.
 
 ---
 

@@ -837,7 +837,7 @@ export const handlers = [
       id: rid("ptr"),
       name,
       slug,
-      logoDataUrl: body.logoDataUrl,
+      logoDataUrl: body.logoDataUrl || undefined,
       accentColor: body.accentColor ?? "#1B5FAA",
       package: pkg,
       features: body.features ?? PACKAGE_FEATURES[pkg],

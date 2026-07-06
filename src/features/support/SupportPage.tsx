@@ -123,7 +123,7 @@ export default function SupportPage() {
       {/* Hero search */}
       <Card className="relative overflow-hidden border-0 bg-shell-asphalt text-shell-paper">
         <div className="ruler-bg pointer-events-none absolute inset-0 opacity-40" />
-        <div className="absolute inset-x-0 top-0 h-1 bg-[repeating-linear-gradient(90deg,#FBCE07_0_44px,transparent_44px_84px)]" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-signage-dash" />
         <CardContent className="relative flex flex-col items-center gap-4 p-10 text-center">
           <div className="grid size-12 place-items-center rounded-xl bg-brand-accent text-brand-on-accent">
             <LifeBuoy className="size-6" />

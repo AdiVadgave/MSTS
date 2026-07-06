@@ -443,6 +443,8 @@ dropdown fakes picking `tolls.<slug>.com` without changing the URL bar.
 | W23 | Branded export — CSV | As Alpine → **Export CSV** | CSV includes an Alpine-branded comment/header line | ☐ |
 | W24 | MSTS default export unchanged | As the default MSTS login (no partner param) → export PDF/CSV | Exports still say **"MSTS One"**; PDF shows the same thin accent bar (Shell yellow) — this is a new, plan-mandated element and not a regression | ☐ |
 | W25 | MSTS default login/portal unchanged | Open `/login` with no `partner` param | Login and portal look identical to the pre-whitelabeling baseline (Shell yellow/asphalt, MSTS branding, no domain-simulator side effects) | ☐ |
+| W26 ◈ | Zero-entity partner fails closed | Create a partner with no customers assigned, Preview → login | No tenant data visible anywhere (empty lists/zero KPIs), NOT all tenants' data | ☐ |
+| W27 ◈ | Support page under partner brand | As any partner, open Support via an upgrade card's Contact MSTS button | No Shell-yellow identity elements; dashed rules follow the partner accent | ☐ |
 
 ---
 
