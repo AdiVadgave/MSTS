@@ -33,7 +33,7 @@ export function StatStrip({ stats, className }: { stats: StripStat[]; className?
             s.onClick && "hover:bg-white/5"
           )}
         >
-          <div className="font-display text-[2.4rem] font-black leading-none text-shell-yellow">
+          <div className="font-display text-[2.4rem] font-black leading-none text-brand-accent">
             {s.num}
           </div>
           <div className="mt-2 text-sm text-[#a79f92]">{s.label}</div>

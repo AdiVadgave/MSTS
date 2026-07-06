@@ -84,7 +84,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                         "text-[hsl(var(--sidebar-foreground))] hover:bg-white/5 hover:text-white",
                         collapsed && "justify-center px-0",
                         isActive &&
-                          "bg-shell-yellow/15 text-white ring-1 ring-inset ring-shell-yellow/40"
+                          "bg-brand-accent/15 text-white ring-1 ring-inset ring-brand-accent/40"
                       )
                     }
                   >
@@ -94,7 +94,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                           className={cn(
                             "size-[18px] shrink-0",
                             isActive
-                              ? "text-shell-yellow"
+                              ? "text-brand-accent"
                               : "text-[hsl(var(--sidebar-muted))] group-hover:text-white"
                           )}
                         />

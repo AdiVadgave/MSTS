@@ -32,7 +32,7 @@ export function Ticker({ signs, className }: { signs: TickerSign[]; className?: 
                 s.live === false ? "bg-shell-grey" : "bg-shell-ok"
               )}
             />
-            <span className="font-display text-lg font-black text-shell-yellow">{s.cc}</span>
+            <span className="font-display text-lg font-black text-brand-accent">{s.cc}</span>
             <span className="font-mono text-[0.78rem] tracking-[0.05em] text-[#9a9184]">
               {s.label}
             </span>

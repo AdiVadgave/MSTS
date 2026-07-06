@@ -4,7 +4,7 @@ type TagKind = "gnss" | "dsrc" | "live" | "neutral";
 
 const STYLE: Record<TagKind, string> = {
   gnss: "bg-shell-ok/15 text-[#5fd6a3]",
-  dsrc: "bg-shell-yellow/15 text-shell-yellow-deep",
+  dsrc: "bg-brand-accent/15 text-brand-accent-deep",
   live: "bg-shell-ok/15 text-[#5fd6a3]",
   neutral: "bg-shell-ink/10 text-shell-grey",
 };

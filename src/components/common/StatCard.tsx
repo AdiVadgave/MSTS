@@ -16,8 +16,8 @@ interface StatCardProps {
 
 const ACCENT: Record<string, string> = {
   // asphalt tile with yellow icon — the signature "signage" look
-  primary: "text-shell-yellow bg-[hsl(var(--sidebar))]",
-  brand: "text-shell-ink bg-shell-yellow",
+  primary: "text-brand-accent bg-[hsl(var(--sidebar))]",
+  brand: "text-brand-on-accent bg-brand-accent",
   success: "text-success bg-success/12",
   warning: "text-shell-ink bg-shell-yellow/25",
   destructive: "text-destructive bg-destructive/10",

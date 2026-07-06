@@ -19,7 +19,7 @@ export function Step({
   return (
     <div className={cn("border-t-4 border-shell-ink pt-5", className)}>
       <div
-        className="font-display text-[3rem] font-black leading-none text-shell-yellow"
+        className="font-display text-[3rem] font-black leading-none text-brand-accent"
         style={{ WebkitTextStroke: "2px #1A1712" }}
       >
         {no}

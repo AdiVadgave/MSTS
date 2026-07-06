@@ -49,7 +49,7 @@ export default function DomainsPage() {
                     className={cn(
                       "relative overflow-hidden rounded-lg border p-3 pl-4 text-center transition-all",
                       isActive
-                        ? "border-shell-yellow bg-shell-yellow"
+                        ? "border-brand-accent bg-brand-accent"
                         : "border-shell-asphalt-line bg-shell-asphalt-2 hover:-translate-y-0.5 hover:border-[#6b6252]"
                     )}
                   >
@@ -96,7 +96,7 @@ function DetailPanel({
   return (
     <div className="rounded-2xl border border-shell-asphalt-line bg-shell-asphalt-2 p-6 text-shell-paper sm:p-7">
       <div className="mb-5 flex items-center gap-3.5">
-        <span className="rounded-lg bg-shell-yellow px-3.5 py-1.5 font-display text-2xl font-black leading-none text-shell-ink">
+        <span className="rounded-lg bg-brand-accent px-3.5 py-1.5 font-display text-2xl font-black leading-none text-brand-on-accent">
           {d.country}
         </span>
         <div>
@@ -127,9 +127,9 @@ function DetailPanel({
       <div className="mt-5 rounded-[10px] bg-shell-asphalt p-4 font-mono text-[0.78rem] leading-relaxed text-[#b7ae9f]">
         <span className="text-shell-ok">●</span> LIVE &nbsp; {d.country}-toll matched
         <br />
-        plate <span className="text-shell-yellow">MSTS·4471·07</span> → invoice FLEET-4471
+        plate <span className="text-brand-accent">MSTS·4471·07</span> → invoice FLEET-4471
         <br />
-        mode <span className="text-shell-yellow">{d.tech}</span> · settled automatically
+        mode <span className="text-brand-accent">{d.tech}</span> · settled automatically
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">

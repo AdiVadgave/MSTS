@@ -29,7 +29,7 @@ export function SignageHero({
         "relative overflow-hidden rounded-2xl border",
         asphalt
           ? "border-shell-asphalt-line bg-shell-asphalt text-shell-paper"
-          : "border-shell-yellow-deep/40 bg-shell-yellow text-shell-ink",
+          : "border-brand-accent-deep/40 bg-brand-accent text-brand-on-accent",
         className
       )}
     >
@@ -47,7 +47,7 @@ export function SignageHero({
           <p
             className={cn(
               "eyebrow",
-              asphalt ? "text-shell-yellow" : "text-[#4a3f22]"
+              asphalt ? "text-brand-accent" : "text-[#4a3f22]"
             )}
           >
             {eyebrow}

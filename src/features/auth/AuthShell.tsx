@@ -24,7 +24,7 @@ export function AuthShell({
           </span>
         </div>
         <div className="relative overflow-hidden rounded-2xl border border-shell-asphalt-line bg-shell-asphalt-2 p-8 shadow-[0_40px_80px_-32px_rgba(0,0,0,0.6)]">
-          <div className="absolute inset-x-0 top-0 h-1 bg-[repeating-linear-gradient(90deg,#FBCE07_0_44px,transparent_44px_84px)]" />
+          <div className="absolute inset-x-0 top-0 h-1 bg-signage-dash" />
           <h1 className="font-display text-2xl font-black">{title}</h1>
           <p className="mt-1.5 text-sm text-[#9a9184]">{subtitle}</p>
           <div className="mt-6">{children}</div>
