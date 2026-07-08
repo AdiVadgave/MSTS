@@ -181,11 +181,18 @@ export function slugify(name: string): string {
 export interface ExportBrand {
   name: string;
   accentColor: string;
+  /** Uploaded partner logo (data URL). Embedded in PDF headers when the
+   *  format is raster (PNG/JPEG); otherwise the name renders as text. */
+  logoDataUrl?: string;
 }
 
 /** Brand info for file exports — only when branded-invoicing is licensed. */
 export function exportBrandOf(brand: Partner | null): ExportBrand | undefined {
   return brand && brand.features.includes("branded-invoicing")
-    ? { name: brand.name, accentColor: brand.accentColor }
+    ? {
+        name: brand.name,
+        accentColor: brand.accentColor,
+        logoDataUrl: brand.logoDataUrl,
+      }
     : undefined;
 }

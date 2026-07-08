@@ -8,6 +8,70 @@ function rgbOf(hex: string): [number, number, number] {
   return [r, g, b];
 }
 
+/** jsPDF can embed PNG/JPEG only; other uploads fall back to name text. */
+function pdfLogo(
+  brand?: ExportBrand
+): { dataUrl: string; format: "PNG" | "JPEG" } | null {
+  const url = brand?.logoDataUrl;
+  if (!url) return null;
+  if (/^data:image\/png/i.test(url)) return { dataUrl: url, format: "PNG" };
+  if (/^data:image\/jpe?g/i.test(url)) return { dataUrl: url, format: "JPEG" };
+  return null;
+}
+
+/**
+ * Document header, shared by all PDF exports.
+ * - Partner with an embeddable logo → clean white header: the uploaded
+ *   logo top-left (logos are designed for light grounds), title in ink.
+ * - Partner without a raster logo → asphalt band with the partner name
+ *   in its accent color.
+ * - No brand (MSTS default) → asphalt band, "MSTS One" in Shell yellow.
+ * All variants end with a 1.5pt accent rule under the band.
+ */
+function drawPdfHeader(
+  doc: jsPDF,
+  pageW: number,
+  margin: number,
+  bandH: number,
+  title: string,
+  brand?: ExportBrand
+): void {
+  const accent = brand ? rgbOf(brand.accentColor) : ([251, 206, 7] as [number, number, number]);
+  const big = bandH >= 26;
+  const baseline = big ? 16 : 14;
+
+  const logo = pdfLogo(brand);
+  if (logo) {
+    try {
+      const props = doc.getImageProperties(logo.dataUrl);
+      const h = bandH - 9;
+      const w = Math.min((props.width / props.height) * h, 64);
+      doc.addImage(logo.dataUrl, logo.format, margin, 4.5, w, h);
+      doc.setTextColor(26, 23, 18);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(big ? 11 : 10);
+      doc.text(title, pageW - margin, baseline, { align: "right" });
+      doc.setFillColor(...accent);
+      doc.rect(0, bandH, pageW, 1.5, "F");
+      return;
+    } catch {
+      /* unreadable image data — fall through to the name-text header */
+    }
+  }
+
+  doc.setFillColor(22, 19, 16); // asphalt
+  doc.rect(0, 0, pageW, bandH, "F");
+  doc.setFillColor(...accent);
+  doc.rect(0, bandH, pageW, 1.5, "F");
+  doc.setTextColor(...accent);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(big ? 16 : 14);
+  doc.text(brand ? brand.name : "MSTS One", margin, baseline);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(big ? 11 : 10);
+  doc.text(title, pageW - margin, baseline, { align: "right" });
+}
+
 /** Trigger a browser download for a Blob. */
 function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -76,19 +140,8 @@ export function downloadTablePDF(
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 14;
 
-  // Branded header band (partner brand when licensed, else MSTS)
-  doc.setFillColor(22, 19, 16); // asphalt
-  doc.rect(0, 0, pageW, 22, "F");
-  const accent = brand ? rgbOf(brand.accentColor) : ([251, 206, 7] as [number, number, number]);
-  doc.setFillColor(...accent);
-  doc.rect(0, 22, pageW, 1.5, "F");
-  doc.setTextColor(...accent);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text(brand ? brand.name : "MSTS One", margin, 14);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
-  doc.text(title, pageW - margin, 14, { align: "right" });
+  // Branded header (partner logo/name when licensed, else MSTS)
+  drawPdfHeader(doc, pageW, margin, 22, title, brand);
 
   let y = 34;
   doc.setTextColor(60, 60, 60);
@@ -155,18 +208,8 @@ export function downloadDocumentPDF(
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 16;
 
-  doc.setFillColor(22, 19, 16);
-  doc.rect(0, 0, pageW, 26, "F");
-  const accent = opts.brand ? rgbOf(opts.brand.accentColor) : ([251, 206, 7] as [number, number, number]);
-  doc.setFillColor(...accent);
-  doc.rect(0, 26, pageW, 1.5, "F");
-  doc.setTextColor(...accent);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(16);
-  doc.text(opts.brand ? opts.brand.name : "MSTS One", margin, 16);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(11);
-  doc.text(opts.title, pageW - margin, 16, { align: "right" });
+  // Branded header (partner logo/name when licensed, else MSTS)
+  drawPdfHeader(doc, pageW, margin, 26, opts.title, opts.brand);
 
   let y = 38;
   doc.setTextColor(90, 90, 90);
