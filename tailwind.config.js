@@ -82,9 +82,9 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["Inter", "ui-sans-serif", "system-ui", "sans-serif"],
-        display: ["Archivo", "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+        sans: ["var(--font-body)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       boxShadow: {
         card: "0 1px 2px 0 rgb(26 23 18 / 0.05), 0 1px 3px 0 rgb(26 23 18 / 0.06)",
@@ -121,8 +121,7 @@ export default {
       backgroundImage: {
         "signage-stripes":
           "repeating-linear-gradient(90deg,transparent 0 78px,rgba(0,0,0,.045) 78px 80px)",
-        "signage-dash":
-          "repeating-linear-gradient(90deg,rgb(var(--brand-accent)) 0 44px,transparent 44px 84px)",
+        "signage-dash": "var(--motif-dash)",
       },
     },
   },

@@ -12,7 +12,6 @@ import {
   UserPlus,
   LifeBuoy,
   Settings,
-  Palette,
   type LucideIcon,
 } from "lucide-react";
 import type { FeatureFlag, Partner, SourcePortal } from "@/lib/types";
@@ -167,15 +166,9 @@ export const NAV: NavGroup[] = [
         description: "Self-registration & guided setup",
         feature: "onboarding",
       },
-      {
-        label: "Whitelabel Partners",
-        to: "/partners",
-        icon: Palette,
-        sources: ["MyTolls"],
-        keywords: ["reseller", "brand", "whitelabel", "package", "tenant"],
-        description: "Partner branding, packages & tenants",
-        mstsOnly: true,
-      },
+      // Whitelabel partner configuration deliberately has NO portal nav
+      // entry — it lives in the standalone Solution Studio (/studio),
+      // entered from the login screen.
     ],
   },
   {
@@ -232,4 +225,94 @@ export function navForPortal(
   if (globals.length) scoped.push({ label: "General", items: globals });
 
   return scoped;
+}
+
+// ── Generic whitelabel portal ───────────────────────────────────
+// Partners never see Shell's MyTolls/MyMST structure: their portal is a
+// single generic solution built from the modules in their package.
+
+interface BrandModule {
+  flag: FeatureFlag;
+  label: string;
+  to: string;
+  icon: LucideIcon;
+  keywords: string[];
+  description: string;
+}
+
+const BRAND_GROUPS: { label: string; modules: BrandModule[] }[] = [
+  {
+    label: "Overview",
+    modules: [
+      { flag: "dashboard", label: "Dashboard", to: "/", icon: LayoutDashboard, keywords: ["home", "overview", "kpi", "fleet"], description: "Fleet overview & KPIs" },
+    ],
+  },
+  {
+    label: "Fleet",
+    modules: [
+      { flag: "vehicles", label: "Vehicles", to: "/vehicles", icon: Truck, keywords: ["truck", "trailer", "plate"], description: "Manage vehicles & documents" },
+      { flag: "obu", label: "Devices", to: "/obus", icon: RadioTower, keywords: ["on-board unit", "device", "tag"], description: "Assign, replace & track devices" },
+      { flag: "hauliers", label: "Carriers", to: "/hauliers", icon: Building2, keywords: ["carrier", "company", "owner"], description: "Carrier & owner companies" },
+    ],
+  },
+  {
+    label: "Tolling",
+    modules: [
+      { flag: "products", label: "Toll Products", to: "/products", icon: ShoppingCart, keywords: ["order", "vignette", "card"], description: "Order & manage tolling products" },
+      { flag: "domains", label: "Toll Coverage", to: "/domains", icon: Globe2, keywords: ["coverage", "scheme", "country"], description: "Toll schemes & coverage" },
+    ],
+  },
+  {
+    label: "Billing",
+    modules: [
+      { flag: "transactions", label: "Transactions", to: "/transactions", icon: Receipt, keywords: ["usage", "passage"], description: "Search toll transactions" },
+      { flag: "reports", label: "Reports", to: "/reports", icon: BarChart3, keywords: ["export", "csv", "pdf"], description: "Standard & scheduled reports" },
+      { flag: "finance", label: "Invoices", to: "/finance", icon: Wallet, keywords: ["invoice", "payment", "balance"], description: "Invoices, balances & payments" },
+    ],
+  },
+  {
+    label: "Administration",
+    modules: [
+      { flag: "users", label: "Users & Access", to: "/users", icon: Users, keywords: ["role", "permission", "invite"], description: "Users, roles & permissions" },
+      { flag: "onboarding", label: "Customer Onboarding", to: "/onboarding", icon: UserPlus, keywords: ["register", "signup", "wizard"], description: "Guided customer setup" },
+    ],
+  },
+];
+
+/** Generic nav for a whitelabel partner: only their modules, generic names. */
+export function navForBrand(brand: Partner): NavGroup[] {
+  const groups: NavGroup[] = BRAND_GROUPS.map((g) => ({
+    label: g.label,
+    items: g.modules
+      .filter((m) => featureEnabled(brand, m.flag))
+      .map((m) => ({
+        label: m.label,
+        to: m.to,
+        icon: m.icon,
+        sources: [], // generic — no Shell provenance
+        keywords: m.keywords,
+        description: m.description,
+        feature: m.flag,
+      })),
+  })).filter((g) => g.items.length > 0);
+  const globals = ALL_NAV_ITEMS.filter((i) => i.global);
+  if (globals.length) groups.push({ label: "General", items: globals });
+  return groups;
+}
+
+/** Generic display label for a module flag (upgrade cards etc.). */
+export function brandModuleLabel(flag: FeatureFlag): string {
+  for (const g of BRAND_GROUPS) {
+    const m = g.modules.find((x) => x.flag === flag);
+    if (m) return m.label;
+  }
+  return "This module";
+}
+
+/** Landing route for a partner: Dashboard if enabled, else first module. */
+export function brandHome(brand: Partner): string {
+  for (const g of navForBrand(brand)) {
+    if (g.label !== "General" && g.items.length) return g.items[0].to;
+  }
+  return "/support";
 }

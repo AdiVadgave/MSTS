@@ -1,6 +1,12 @@
-weight,euro,plate,cc,axles,vehicletype
-26000,EURO 6,12-ABC-3,NL,4,Truck
-40000,5,B XY 4421,DE,5,Truck
-999,EURO 6,99-KLM-2,NL,2,Trailer
-12000,EURO 7,1-GBP-88,BE,2,Van
-18000,EURO 4,FR-772-QA,XX,12,Lorry
+reg,cc,vehicletype,euro,axlecount,kg,depot
+12-ABC-3,NL,Truck,EURO 6,4,26000,Rotterdam
+b xy 4421,de,truck,6,5,"40,000",Duisburg
+,NL,Truck,EURO 6,4,26000,Amsterdam
+9-9-9-9-9,DE,Truck,EURO 5,4,30000,Hamburg
+55-TRK-9,XX,Truck,EURO 5,4,30000,Oslo
+31-EMP-7,,Truck,EURO 6,4,26000,Utrecht
+66-LRY-1,FR,Lorry,EURO 6,3,22000,Lyon
+77-EUR-7,BE,Van,EURO 7,2,3200,Antwerp
+88-AXL-2,NL,Trailer,EURO 6,12,999,Eindhoven
+44-BAD-4,DE,Bus,EURO 4,four,heavy,Berlin
+90-HVY-5,AT,Truck,EURO 5,6,75000,Wien

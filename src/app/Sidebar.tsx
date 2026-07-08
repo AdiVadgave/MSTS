@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { navForPortal, NAV } from "./nav";
+import { navForPortal, navForBrand, NAV } from "./nav";
 import { PORTALS } from "./portals";
 import { LogoMark } from "@/components/brand/Logo";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { useAppStore } from "./store";
+import { portalNameOf, onAccentHex } from "@/lib/brand";
 import {
   Tooltip,
   TooltipContent,
@@ -15,7 +16,11 @@ import { cn } from "@/lib/utils";
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { sidebarCollapsed: collapsed, toggleSidebar, activePortal, activeBrand } = useAppStore();
   const portal = activePortal ? PORTALS[activePortal] : null;
-  const groups = activePortal ? navForPortal(activePortal, activeBrand) : NAV;
+  const groups = activeBrand
+    ? navForBrand(activeBrand)
+    : activePortal
+      ? navForPortal(activePortal)
+      : NAV;
 
   return (
     <div className="flex h-full flex-col sidebar-bg">
@@ -33,17 +38,21 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <div className="flex min-w-0 items-center gap-2">
             <BrandLogo className="h-6" />
             <span
-              className="truncate rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white"
-              style={{ background: portal ? portal.accent : "rgba(255,255,255,0.1)" }}
+              className="truncate rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+              style={
+                activeBrand
+                  ? { background: activeBrand.accentColor, color: onAccentHex(activeBrand.accentColor) }
+                  : { background: portal ? portal.accent : "rgba(255,255,255,0.1)", color: "#fff" }
+              }
             >
-              {portal ? portal.name : "One"}
+              {activeBrand ? portalNameOf(activeBrand) : portal ? portal.name : "One"}
             </span>
           </div>
         )}
       </div>
 
       {/* Active portal identity bar */}
-      {portal && (
+      {(activeBrand ? Boolean(activeBrand.tagline) : Boolean(portal)) && (
         <div
           className={cn(
             "flex items-center gap-2 border-b border-[hsl(var(--sidebar-border))] px-4 py-2.5",
@@ -52,11 +61,11 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         >
           <span
             className="size-2.5 shrink-0 rounded-full"
-            style={{ background: portal.accent }}
+            style={{ background: activeBrand ? activeBrand.accentColor : portal!.accent }}
           />
           {!collapsed && (
             <span className="truncate text-[11px] text-[hsl(var(--sidebar-muted))]">
-              {portal.tagline}
+              {activeBrand ? activeBrand.tagline : portal!.tagline}
             </span>
           )}
         </div>

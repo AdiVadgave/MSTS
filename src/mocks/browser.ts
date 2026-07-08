@@ -3,6 +3,17 @@ import { handlers } from "./handlers";
 
 export const worker = setupWorker(...handlers);
 
+// Hot-swap edited handlers into the RUNNING worker. Without this, Vite HMR
+// updates the handlers module but the worker keeps the set captured at
+// startup — later requests to new/changed routes fall through to the
+// Express proxy and 404 until a hard refresh.
+if (import.meta.hot) {
+  import.meta.hot.accept("./handlers", (mod) => {
+    const next = (mod as typeof import("./handlers") | undefined)?.handlers;
+    if (next) worker.resetHandlers(...next);
+  });
+}
+
 export async function startMockServer() {
   await worker.start({
     quiet: true,

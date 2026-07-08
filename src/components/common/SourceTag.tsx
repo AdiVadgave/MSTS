@@ -1,5 +1,6 @@
 import type { SourcePortal } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/app/store";
 
 const STYLE: Record<SourcePortal, string> = {
   MyTolls: "bg-blue-50 text-blue-700 ring-blue-200",
@@ -15,6 +16,9 @@ export function SourceTag({
   source: SourcePortal;
   className?: string;
 }) {
+  const { activeBrand } = useAppStore();
+  // Shell-internal provenance — never shown in a whitelabel portal.
+  if (activeBrand) return null;
   return (
     <span
       title={`Originated in ${source}`}

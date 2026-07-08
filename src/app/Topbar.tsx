@@ -1,4 +1,4 @@
-import { Menu, Search, Bell, Sun, Moon, Check, ChevronsUpDown, LogOut, User as UserIcon, Building, CheckCheck, ArrowLeftRight } from "lucide-react";
+import { Menu, Search, Bell, Sun, Moon, Check, ChevronsUpDown, LogOut, User as UserIcon, Building, CheckCheck, ArrowLeftRight, Palette } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAppStore } from "./store";
@@ -98,7 +98,7 @@ export function Topbar() {
       </Button>
 
       {/* Portal switcher — one-tap toggle to the other portal */}
-      {portal && otherPortal && otherPortalUsable && (
+      {!activeBrand && portal && otherPortal && otherPortalUsable && (
         <button
           onClick={() => {
             selectPortal(otherPortal.id);
@@ -262,6 +262,16 @@ export function Topbar() {
             <DropdownMenuItem onClick={() => navigate("/account?tab=entity")}>
               <Building /> Company settings
             </DropdownMenuItem>
+            {/* MSTS-internal: whitelabel configuration lives outside the
+                portal, in the standalone Solution Studio. */}
+            {!activeBrand && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => navigate("/studio")}>
+                  <Palette /> Solution Studio
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {

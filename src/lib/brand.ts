@@ -2,7 +2,7 @@
 // Single source of truth for package→feature mapping and the CSS
 // brand-variable layer (--brand-accent etc., RGB channels).
 
-import type { FeatureFlag, Partner, PartnerPackage } from "./types";
+import type { DesignTemplate, FeatureFlag, Partner, PartnerPackage } from "./types";
 
 const BASIC: FeatureFlag[] = [
   "dashboard", "vehicles", "obu", "hauliers", "products", "domains",
@@ -66,7 +66,74 @@ export function onAccentHex(accent: string): string {
   return lum > 0.55 ? "#1A1712" : "#FFFFFF";
 }
 
-/** Set/remove the brand CSS vars on <html>. null = MSTS defaults. */
+export interface TemplateMeta {
+  id: DesignTemplate;
+  name: string;
+  description: string;
+  /** Picker-card swatches: [page surface, sidebar, card]. */
+  swatches: [string, string, string];
+  defaultDark: boolean;
+}
+
+export const DESIGN_TEMPLATES: TemplateMeta[] = [
+  {
+    id: "signage",
+    name: "Signage",
+    description:
+      "Editorial highway-signage look — warm paper, asphalt sidebar, bold display type and dashed motifs.",
+    swatches: ["#FAF7F0", "#161310", "#FDFCF9"],
+    defaultDark: false,
+  },
+  {
+    id: "executive",
+    name: "Executive",
+    description:
+      "Clean corporate SaaS — cool white and slate, soft corners, quiet chrome.",
+    swatches: ["#F5F6F8", "#20293A", "#FFFFFF"],
+    defaultDark: false,
+  },
+  {
+    id: "carbon",
+    name: "Carbon",
+    description:
+      "Dark tech console — near-black surfaces, sharp corners, thin accent lines. Dark-first.",
+    swatches: ["#0E1113", "#08090B", "#16191C"],
+    defaultDark: true,
+  },
+];
+
+/** Active design template; MSTS (null brand) is pinned to Signage. */
+export function templateOf(brand: Partner | null): DesignTemplate {
+  return brand?.designTemplate ?? "signage";
+}
+
+/** Sidebar-chip portal name with sensible fallback. */
+export function portalNameOf(brand: Partner): string {
+  return brand.portalName?.trim() || `${brand.name} Tolls`;
+}
+
+/** "#FBCE07" → "49 96% 51%" (HSL channels for the semantic token layer). */
+export function hexToHslChannels(hex: string): string {
+  const [r, g, b] = hexToChannels(hex).split(" ").map((v) => Number(v) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0;
+  let s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+  }
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
+/**
+ * Set/remove the brand CSS vars + design-template attribute on <html>.
+ * null = MSTS defaults (Signage, Shell-red primary).
+ */
 export function applyBrandVars(brand: Partner | null): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
@@ -74,11 +141,23 @@ export function applyBrandVars(brand: Partner | null): void {
     root.style.removeProperty("--brand-accent");
     root.style.removeProperty("--brand-accent-deep");
     root.style.removeProperty("--brand-on-accent");
+    root.style.removeProperty("--primary");
+    root.style.removeProperty("--primary-foreground");
+    root.style.removeProperty("--ring");
+    root.removeAttribute("data-theme");
     return;
   }
   root.style.setProperty("--brand-accent", hexToChannels(brand.accentColor));
   root.style.setProperty("--brand-accent-deep", hexToChannels(darkenHex(brand.accentColor)));
   root.style.setProperty("--brand-on-accent", hexToChannels(onAccentHex(brand.accentColor)));
+  // Whitelabel action color: the partner accent replaces Shell red for
+  // primary buttons, links and focus rings.
+  root.style.setProperty("--primary", hexToHslChannels(brand.accentColor));
+  root.style.setProperty("--primary-foreground", hexToHslChannels(onAccentHex(brand.accentColor)));
+  root.style.setProperty("--ring", hexToHslChannels(brand.accentColor));
+  const template = templateOf(brand);
+  if (template === "signage") root.removeAttribute("data-theme");
+  else root.setAttribute("data-theme", template);
 }
 
 /** "Alpine Fleet Services" → "AF" */

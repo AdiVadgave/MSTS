@@ -270,6 +270,8 @@ eligibleTypes ⊇ vehicle type**; already-owned = Existing; missing attributes =
 | R3 | Export XLSX | **Export as XLSX** | Downloads a `.xls` that opens in Excel | ☐ |
 | R4 | Export PDF | **Export as PDF** | Downloads a **branded multi-page PDF** table | ☐ |
 | R5 | Scheduled | **Scheduled reports** | Informational toast (simulated — not a bug) | ☐ |
+| R6 ◈ | Parameter dialog | Report → **Run** | A **Report parameters** dialog collects start date, end date and format before the export runs | ☐ |
+| R7 ◈ | Parameters filter the data | Run a transactions report twice: full 90-day range vs. a 1-week range | The narrow range downloads **fewer rows** (toast row count + file contents shrink) — dates are real parameters, not just a filename stamp; start date must be ≤ end date (inline validation) | ☐ |
 
 ---
 
@@ -293,7 +295,9 @@ eligibleTypes ⊇ vehicle type**; already-owned = Existing; missing attributes =
 | F3 | Pay | Row menu → **Mark as paid** | Status → Paid; toast; persists | ☐ |
 | F4 | Dispute | Row menu → **Dispute invoice** | Status → Disputed; toast | ☐ |
 | F5 | Invoice PDF | Row menu → **Download PDF** | Real branded **invoice PDF** (net/VAT/total) downloads | ☐ |
-| F6 | Statement | **Statement** button | Real **statement PDF** downloads | ☐ |
+| F6 | Statement | **Statement** button | A **Statement parameters** dialog (start/end date) precedes the download; real **statement PDF** stamped with the period | ☐ |
+| F7 ◈ | Period filter | Toolbar → **Period** → pick a start/end date → **Apply filter** | Invoice list shows only invoices **issued within the range** (server-side; pagination + KPI tiles follow); an active-filter chip shows the range | ☐ |
+| F8 ◈ | Clear period filter | Click **✕** on the period chip | Full list returns; page resets to 1; combines correctly with the status filter (both can be active at once) | ☐ |
 
 ---
 
@@ -429,7 +433,7 @@ dropdown fakes picking `tolls.<slug>.com` without changing the URL bar.
 | W9 ◈ | Package gating — Enterprise (Alpine) | Log in as Alpine | All modules from §20's matrix are visible in sidebar + ⌘K; no UpgradeState anywhere | ☐ |
 | W10 | Tenant isolation — Alpine | As Alpine, open the entity switcher | Only **e1 (NVD Stage BP 1)** and **e2 (Automation Foreign Std)** are listed; Vehicles/Transactions/etc. counts match §8's per-entity golden numbers for e1/e2 | ☐ |
 | W11 ◈ | Tenant isolation — Nordkap | As Nordkap, open the entity switcher | Only **e3 (Meridian Logistics)** is listed; counts match §8's e3 golden numbers; no e1/e2 data visible anywhere | ☐ |
-| W12 | Admin console — list | Log in as MSTS default, open **/partners** | List shows Alpine + Nordkap with logo/swatch, package badge, entity count, status | ☐ |
+| W12 | Admin console — list | Log in as MSTS default, open the **Solution Studio** (`/studio`, or profile menu → Solution Studio) | List shows Alpine + Nordkap with logo/swatch, package badge, entity count, status | ☐ |
 | W13 ◈ | Admin — create partner | **Add partner** → fill slug/name/package/accent → save | New partner appears in the list; persists across reload | ☐ |
 | W14 | Admin — slug collision | Try creating a partner with slug `alpine` (existing) | Inline validation error; save blocked | ☐ |
 | W15 ◈ | Admin — logo upload size guard | Editor sheet → Branding tab → upload an image **> 200 KB** | Rejected with a size-limit error; existing logo unchanged | ☐ |
@@ -438,13 +442,70 @@ dropdown fakes picking `tolls.<slug>.com` without changing the URL bar.
 | W18 ◈ | Admin — preview | Editor sheet → **Preview** | Opens/renders the partner's branded login look without leaving the admin session | ☐ |
 | W19 ◈ | Admin — suspend | Partner row menu → **Suspend** | Status → Suspended; partner disappears from the `/login` domain-simulator picker; `/login?partner=<slug>` now shows the unavailable card | ☐ |
 | W20 ◈ | Admin — delete | Partner row menu → **Delete** → confirm | Partner removed from list and picker; persists across reload | ☐ |
-| W21 ◈ | Persistence across reload | After W13/W17/W19, hard refresh and re-open **/partners** | All changes (new partner, reassigned entity, suspended status) survive reload (`msts-db` v5 in localStorage) | ☐ |
+| W21 ◈ | Persistence across reload | After W13/W17/W19, hard refresh and re-open **/studio** | All changes (new partner, reassigned entity, suspended status) survive reload (`msts-db` v6 in localStorage) | ☐ |
 | W22 | Branded export — PDF | As Alpine, with `branded-invoicing` enabled for the package, Reports/Finance → **Export as PDF** | PDF header band shows Alpine branding; a thin accent bar under the header uses Alpine green | ☐ |
 | W23 | Branded export — CSV | As Alpine → **Export CSV** | CSV includes an Alpine-branded comment/header line | ☐ |
 | W24 | MSTS default export unchanged | As the default MSTS login (no partner param) → export PDF/CSV | Exports still say **"MSTS One"**; PDF shows the same thin accent bar (Shell yellow) — this is a new, plan-mandated element and not a regression | ☐ |
 | W25 | MSTS default login/portal unchanged | Open `/login` with no `partner` param | Login and portal look identical to the pre-whitelabeling baseline (Shell yellow/asphalt, MSTS branding, no domain-simulator side effects) | ☐ |
 | W26 ◈ | Zero-entity partner fails closed | Create a partner with no customers assigned, Preview → login | No tenant data visible anywhere (empty lists/zero KPIs), NOT all tenants' data | ☐ |
 | W27 ◈ | Support page under partner brand | As any partner, open Support via an upgrade card's Contact MSTS button | No Shell-yellow identity elements; dashed rules follow the partner accent | ☐ |
+
+---
+
+## 23. Generic Solution Builder
+
+*Rows marked ◈ have been verified only by code inspection or a scripted partial
+pass (not a full manual click-through) — prioritize them on the first manual
+pass. Partners are seeded in the mock DB (`msts-db` schema **v6**): **Alpine
+Fleet Services** (`alpine`, green `#2F7D4F`, **Executive** template,
+**Enterprise** package, entities e1+e2) and **Nordkap Logistik** (`nordkap`,
+blue `#1B5FAA`, **Carbon** template, **Basic** package, entity e3). The old
+partner edit sheet is gone — creation/editing now go through the **Solution
+Builder wizard** at `/studio/new` and `/studio/:id/edit` (4 steps + a
+live preview rail). The whole console lives OUTSIDE the portal product in
+the standalone **Partner Solution Studio** (`/studio`): enter it via the
+"Partner Solution Studio →" link on the MSTS login card (then sign in +
+MFA), or via the profile menu's "Solution Studio" item from an MSTS portal
+session. It has no portal sidebar/entity selector and no MyTolls nav entry.*
+
+| ID | Case | Steps | Expected result | Status |
+|---|---|---|---|---|
+| G0 ◈ | Studio entry from login | On the MSTS login card, click **Partner Solution Studio →**, sign in + MFA | Lands at `/studio` (partners list in the slim studio shell — no portal sidebar); the link is hidden under any partner domain; **Cancel** on the banner reverts to a normal portal sign-in — not exercised this pass | ☐ |
+| G1 | Wizard entry | In the studio (`/studio`) → **New solution** | Opens `/studio/new`; 4-step stepper (Company & Brand / Package & Features / Design / Review & Launch) + live preview rail on the right | ☐ |
+| G2 ◈ | Step 1 validation | On step 1, leave Name/slug empty, click **Next** | **Next** stays disabled until name + slug are non-empty — not exercised this pass | ☐ |
+| G3 | Step 1 auto-slug | Type "Borealis Cargo" into Name | Slug field auto-fills `borealis-cargo` (domain preview `tolls.borealis-cargo.com`) unless the slug was hand-edited first | ☐ |
+| G4 ◈ | Back-navigation retains state | Fill step 1, advance to step 2, pick a package, click **Back** | Step 1 fields (name, slug, entities) are still populated — no data loss crossing steps; not exercised this pass | ☐ |
+| G5 | AI brand-from-logo — Azure live ◈ | Step 1, upload a logo, run the brand analysis | Suggested accent + template render with a **GPT-4o** source badge (keys were present this session); without keys, the same call falls back to a **Mock** badge | ☐ |
+| G6 | AI recommend-solution — Azure live | Step 2, describe the business in the textarea, click **Recommend** | Returns a package tier + per-module reasoning list with a **GPT-4o** badge; verified live: prompt "mid-size logistics reseller needing dashboard, vehicles, transactions and reports, no finance" → **Professional**, 4 modules (Dashboard, Vehicles, Transactions, Reports) with plausible reasoning text | — verified |
+| G7 | Apply AI recommendation | Click **Apply recommendation** | Package + feature checklist update to match the suggestion; still freely editable afterward | — verified |
+| G8 | Step 2 package cards | Step 2, click each of Basic/Professional/Enterprise | Selecting a card updates the feature checklist to that package's default flags; individual flags can still be toggled independently | ☐ |
+| G9 | Template picker | Step 3, view the template grid | Three cards — **Signage**, **Executive**, **Carbon** — each with swatches and a description; selecting one updates the live preview rail immediately | ☐ |
+| G10 | AI portal-copy — Azure live | Step 3, click **Generate**/**Write copy** | Returns portalName/tagline/welcomeText with a **GPT-4o** badge; verified live for "Borealis Cargo" → tagline "Borealis Toll Hub · Streamlined tolling for seamless cargo journeys" | — verified |
+| G11 | Step 4 review summary | Step 4 | Read-only cards: Brand (name/slug/domain), Design & package (template/package/status), Modules (list matching step 2), Customers (assigned entities, warns if zero) | ☐ |
+| G12 | Create & persist | Step 4 → **Save** | Toast confirms creation; returns to `/studio`; new row shows correct Package/Template/Customers/Status columns — verified live (pre-studio-move, at the old `/partners` route): "Borealis Cargo" appeared as Professional / Carbon / 1 customer / Active | — verified |
+| G13 | Persistence across reload | After G12, hard refresh + re-login → `/studio` | New partner still present (`msts-db` v6 in localStorage) — verified live (pre-studio-move) | — verified |
+| G14 | Edit rehydrates ◈ | `/studio` → open the just-created partner for edit | Wizard opens at step 1 pre-filled with all saved values (name, package, template, copy, entities) — not exercised this pass; the list-row click target used in the scripted smoke timed out, needs a manual click-through | ☐ |
+| G15 | Create & preview | Step 4 → **Create & preview portal** | Saves, then opens `/login?partner=<slug>` in a new tab showing that partner's brand/template/copy | ☐ |
+| G16 template render — Signage | MSTS default (no partner) | No `data-theme` attribute on `<html>`; `--primary` HSL starts ~`359 76% 49%` (Shell red) — verified live | — verified |
+| G17 template render — Executive | Login/portal as `tolls.alpine.com` | `<html data-theme="executive">`; `--primary` ≈ `145 45% 34%` (Alpine green); light background, soft corners — verified live | — verified |
+| G18 template render — Carbon dark-first | Login/portal as `tolls.nordkap.com` | `<html data-theme="carbon" class="dark">` **automatically**, no manual dark-mode toggle; body background ≈ `rgb(14, 15, 17)`; `--primary` ≈ `211 73% 39%` (Nordkap blue) — verified live | — verified |
+| G19 | Carbon dark is session-scoped ◈ | While on Nordkap (dark), sign out and log back in as MSTS default | MSTS reverts to light Signage (dark was scoped to the Nordkap session, not a global sticky setting) — not re-verified this pass, verify manually | ☐ |
+| G20 | Generic portal purity — Alpine | Logged in as `tolls.alpine.com`, read the full sidebar + dashboard | Sidebar shows generic groups/labels **Overview→Dashboard, Fleet→Vehicles/Devices/Carriers, Tolling→Toll Products/Toll Coverage, Billing→Transactions/Reports/Invoices, Administration→Users & Access/Customer Onboarding, General→Support/Account**; page text contains **no** "MyTolls", "MyMST", "Toll2.0"/"Toll 2.0", or "MSTS One" — verified live via full body-text scan (all four strings absent) | — verified |
+| G21 | Generic portal purity — Nordkap | Logged in as `tolls.nordkap.com`, read sidebar + dashboard | Same generic labels (Basic package hides Billing group + Administration entirely — confirmed absent); no MyTolls/MyMST/Toll2.0/MSTS One text — verified live | — verified |
+| G22 | Allowed MSTS exception | Partner login screens (Alpine and Nordkap) | The **only** MSTS reference permitted anywhere under a partner brand is the login-footer line "Powered by MSTS Tolls · whitelabel partner portal" — confirmed present verbatim on both, no other Shell/MSTS artifacts — verified live | — verified |
+| G23 | No portal switcher under a brand | As Alpine or Nordkap, check the top bar | No MyTolls/MyMST/Toll2.0 portal-switcher control is rendered — only the entity switcher, search, notifications, account menu — verified live (absent from both partner sessions' text dump) | — verified |
+| G24 ◈ | No SourceTag chips under a brand | As Alpine or Nordkap, scan any list/detail view | No `SourceTag` chip components render (they're an MSTS-only affordance); MSTS default still shows them (Toll 2.0 dashboard/sidebar text confirms MyTolls/MyMST/Toll2.0 identifiers survive for MSTS) — code-verified (SourceTag returns null under a brand), not asserted in the browser this pass | ☐ |
+| G25 | Empty groups hidden | As Nordkap (Basic package) | Billing and Administration nav groups are omitted entirely from the sidebar (not shown empty/disabled) — verified live | — verified |
+| G26 | Partner without dashboard lands on first module ◈ | Create a partner with the `dashboard` flag unchecked, log in as them | Lands on the first enabled module's route (per `brandHome()`), not `/` | ☐ |
+| G27 | Portal copy — sidebar chip | Alpine vs Nordkap sidebar header | Chip reads the partner's `portalName` — "AlpineFleet Portal" / "Nordkap Toll Console" (not the partner's legal name) — verified live | — verified |
+| G28 | Portal copy — tagline bar | Alpine vs Nordkap, just under the sidebar chip | Shows the partner's `tagline` — "Tolls handled, Europe-wide." / "Nordic freight, zero toll friction." — verified live | — verified |
+| G29 | Portal copy — login subtitle | `/login?partner=alpine` before signing in | Subtitle under the partner name/domain reads the partner's `welcomeText` ("Welcome to your AlpineFleet tolling cockpit.") — verified live | — verified |
+| G30 | Portal copy — dashboard hero lede | Alpine/Nordkap dashboard hero | The hero lede line under "One fleet. Every road. One screen." shows the partner's `welcomeText` — verified live for both | — verified |
+| G31 | Partner accent drives primary buttons | Alpine (green) vs Nordkap (blue) vs MSTS (red) | Primary buttons/focus rings follow `--primary`, sourced from each partner's `accentColor` via `hexToHslChannels` — verified live via computed `--primary` values (green/blue/red respectively) | — verified |
+| G32 | MSTS default fully unchanged | `/login` with no partner param, then the Toll 2.0/MyTolls/MyMST session | Signage look, red primary, both SourceTags and the 3-portal switcher (MyTolls/MyMST/Toll 2.0) all present and unaffected by the whitelabel work — verified live | — verified |
+| G33 | Tenant isolation still enforced ◈ | Alpine entity switcher vs Nordkap entity switcher | Alpine only lists e1/e2 (NVD Stage BP 1 / Automation Foreign Std); Nordkap only lists e3 (Meridian Logistics) — confirmed Nordkap's switcher during this pass showed only "20452 \| Meridian Logistics"; Alpine's e1/e2 pair not re-confirmed this pass (was previously verified pre-Task-12) | ☐ |
+| G34 | Basic package gating beyond nav ◈ | As Nordkap, try a direct URL to a Billing-group route | Route blocked/upgrade-gated exactly like the pre-generic-nav gating (§22 W8) — not re-exercised this pass; logic unchanged from Task 1-8, low risk | ☐ |
+| G35 | Slug collision blocked inline ◈ | Wizard step 1, type an existing slug (e.g. `alpine`) | Inline destructive-styled error appears directly on step 1 ("The domain slug "alpine" is already used by another partner — pick a different one."), and Next stays disabled until the slug is changed to a unique value — not browser-verified this pass | ☐ |
 
 ---
 

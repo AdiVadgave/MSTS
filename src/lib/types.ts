@@ -291,6 +291,8 @@ export type FeatureFlag =
   | "branded-invoicing"
   | "scheduled-reports";
 
+export type DesignTemplate = "signage" | "executive" | "carbon";
+
 /** A whitelabel business partner (reseller) running the portal under
  *  their own brand. MSTS itself is represented by `null`, not a record. */
 export interface Partner {
@@ -302,6 +304,14 @@ export interface Partner {
   logoDataUrl?: string;
   /** Hex accent, e.g. "#2F7D4F" — drives --brand-accent. */
   accentColor: string;
+  /** Visual design template applied to the partner's portal. */
+  designTemplate: DesignTemplate;
+  /** Portal display name (sidebar chip); defaults to "<name> Tolls". */
+  portalName?: string;
+  /** One-line positioning shown in the sidebar identity bar. */
+  tagline?: string;
+  /** Login-screen welcome sentence & dashboard greeting. */
+  welcomeText?: string;
   package: PartnerPackage;
   /** Derived from package on selection, individually overridable. */
   features: FeatureFlag[];

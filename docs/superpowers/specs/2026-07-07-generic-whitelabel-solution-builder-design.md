@@ -63,7 +63,7 @@ pinned to `signage`. Applied by the store as `data-theme="<template>"` on
 |---|---|---|---|
 | Mood | highway-editorial (today) | clean corporate SaaS | dark tech console |
 | Fonts | Archivo / Inter / JetBrains Mono | Inter throughout | Inter + mono data |
-| Surfaces | warm paper; asphalt sidebar | cool white/slate; light sidebar | near-black; dark cards |
+| Surfaces | warm paper; asphalt sidebar | cool white/slate; slate sidebar | near-black; dark cards |
 | `--radius` | 0.6rem | 0.9rem | 0.3rem |
 | Motifs | ticker, dashed rules, plate tiles | none — clean hairlines | thin accent lines |
 | Default mode | light | light | dark-first |
@@ -72,8 +72,11 @@ Implementation:
 
 - `globals.css` gains `[data-theme="executive"]` and `[data-theme="carbon"]`
   blocks that re-value the existing semantic tokens (`--background`, `--card`,
-  `--primary`, `--sidebar*`, `--radius`, …) for light and dark. Signage is
-  the unattributed default — zero change to today's CSS path.
+  `--sidebar*`, `--radius`, …) for light and dark. Signage is the
+  unattributed default — zero change to today's CSS path.
+- Under any partner brand, the **action color (`--primary`) becomes the
+  partner's accent** (with computed readable foreground) instead of Shell
+  red — buttons and focus rings carry the partner identity. MSTS keeps red.
 - New font vars `--font-display` / `--font-body` / `--font-mono`;
   `tailwind.config.js` font families switch to `var(...)` with today's stacks
   as `:root` defaults.
@@ -122,7 +125,7 @@ Three endpoints in `server/index.js`, same conventions as `/api/ai/rc-extract`
 mock otherwise; response carries `source: "azure-openai" | "mock"`; UI shows
 the GPT-4o/Mock badge and a loading state):
 
-- `POST /api/ai/brand-from-logo` — multipart image →
+- `POST /api/ai/brand-from-logo` — JSON `{ imageBase64 }` (same convention as `/api/ai/rc-card`) →
   `{ palette: string[], suggestedAccent: string, suggestedTemplate: "signage"|"executive"|"carbon", rationale: string, source }`
 - `POST /api/ai/recommend-solution` — `{ description: string }` →
   `{ package: "basic"|"professional"|"enterprise", modules: FeatureFlag[], reasoning: { module: string, why: string }[], source }`

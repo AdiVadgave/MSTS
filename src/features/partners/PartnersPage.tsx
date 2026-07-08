@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, ExternalLink, MoreHorizontal, Pencil, Pause, Play, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable, type Column } from "@/components/common/DataTable";
@@ -22,12 +23,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAppStore } from "@/app/store";
 import { usePartners, useUpdatePartner, useDeletePartner } from "@/hooks/api";
-import { monogram, onAccentHex } from "@/lib/brand";
+import { monogram, onAccentHex, DESIGN_TEMPLATES } from "@/lib/brand";
 import { formatDate } from "@/lib/utils";
 import type { Partner } from "@/lib/types";
 import NotFoundPage from "@/features/misc/NotFoundPage";
 import { toast } from "sonner";
-import { PartnerSheet } from "./PartnerSheet";
 
 const PACKAGE_BADGE: Record<Partner["package"], string> = {
   basic: "bg-secondary text-secondary-foreground",
@@ -36,19 +36,18 @@ const PACKAGE_BADGE: Record<Partner["package"], string> = {
 };
 
 export default function PartnersPage() {
+  const navigate = useNavigate();
   const { activeBrand } = useAppStore();
   const { data: partners, isLoading } = usePartners();
   const update = useUpdatePartner();
   const remove = useDeletePartner();
-  const [sheetOpen, setSheetOpen] = React.useState(false);
-  const [editing, setEditing] = React.useState<Partner | null>(null);
   const [deleting, setDeleting] = React.useState<Partner | null>(null);
 
   // The console that manages partners is never visible to a partner.
   if (activeBrand) return <NotFoundPage />;
 
-  const openCreate = () => { setEditing(null); setSheetOpen(true); };
-  const openEdit = (p: Partner) => { setEditing(p); setSheetOpen(true); };
+  const openCreate = () => navigate("/studio/new");
+  const openEdit = (p: Partner) => navigate(`/studio/${p.id}/edit`);
   const preview = (p: Partner) =>
     window.open(`/login?partner=${p.slug}`, "_blank", "noopener");
 
@@ -95,6 +94,15 @@ export default function PartnersPage() {
       ),
     },
     {
+      key: "designTemplate",
+      header: "Template",
+      cell: (p) => (
+        <span className="text-sm text-muted-foreground">
+          {DESIGN_TEMPLATES.find((t) => t.id === p.designTemplate)?.name ?? "Signage"}
+        </span>
+      ),
+    },
+    {
       key: "entityIds",
       header: "Customers",
       align: "center",
@@ -130,10 +138,10 @@ export default function PartnersPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Administration · Whitelabel"
+        eyebrow="Solution Studio · Whitelabel"
         title="Whitelabel Partners"
         description="Configure partner branding, packages and tenant customers — resellers run this portal under their own identity."
-        actions={<Button onClick={openCreate}><Plus /> New partner</Button>}
+        actions={<Button onClick={openCreate}><Plus /> New solution</Button>}
       />
 
       <DataTable
@@ -146,12 +154,6 @@ export default function PartnersPage() {
         pageSize={50}
         onPageChange={() => {}}
         emptyTitle="No partners yet"
-      />
-
-      <PartnerSheet
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        partner={editing}
       />
 
       <Dialog open={!!deleting} onOpenChange={(v) => !v && setDeleting(null)}>

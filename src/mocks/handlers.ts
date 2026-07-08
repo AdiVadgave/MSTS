@@ -52,14 +52,33 @@ function nextRun(cadence: Cadence, from = new Date()): string {
   return d.toISOString();
 }
 
-/** Resolve a report id to a concrete column set + rows drawn from the DB. */
+/**
+ * Inclusive date-range check on an ISO timestamp. `from`/`to` are
+ * YYYY-MM-DD strings; comparing date prefixes lexicographically avoids
+ * timezone drift.
+ */
+function inRange(dateIso: string, from: string | null, to: string | null): boolean {
+  const d = dateIso.slice(0, 10);
+  if (from && d < from) return false;
+  if (to && d > to) return false;
+  return true;
+}
+
+/**
+ * Resolve a report id to a concrete column set + rows drawn from the DB.
+ * `from`/`to` (report parameters) bound the dataset: transactions by their
+ * passage date, fleet/carrier lists by creation date. The global toll-domain
+ * catalogue has no natural date and ignores the range.
+ */
 function reportDataset(
   id: string,
-  eid: string | null
+  eid: string | null,
+  from: string | null = null,
+  to: string | null = null
 ): { columns: string[]; rows: Record<string, unknown>[] } {
-  const vehicles = scopeByEntity(db.vehicles, eid);
-  const hauliers = scopeByEntity(db.hauliers, eid);
-  const transactions = scopeByEntity(db.transactions, eid);
+  const vehicles = scopeByEntity(db.vehicles, eid).filter((v) => inRange(v.createdAt, from, to));
+  const hauliers = scopeByEntity(db.hauliers, eid).filter((h) => inRange(h.createdAt, from, to));
+  const transactions = scopeByEntity(db.transactions, eid).filter((t) => inRange(t.date, from, to));
   switch (id) {
     case "truck-detail":
     case "truck-product-list-csv":
@@ -545,13 +564,23 @@ export const handlers = [
   // ── Reports run — returns REAL rows for the client to export ─
   http.post("/api/reports/:id/run", async ({ params, request }) => {
     await delay(700);
-    const body = (await request.json().catch(() => ({}))) as { format?: string; entityId?: string };
+    const body = (await request.json().catch(() => ({}))) as {
+      format?: string;
+      entityId?: string;
+      from?: string;
+      to?: string;
+    };
     const format = body.format ?? "CSV";
-    const { columns, rows } = reportDataset(String(params.id), body.entityId ?? null);
+    const { columns, rows } = reportDataset(
+      String(params.id),
+      body.entityId ?? null,
+      body.from ?? null,
+      body.to ?? null
+    );
     return HttpResponse.json({
       id: params.id,
       format,
-      fileName: `${params.id}-2026Q2.${format.toLowerCase()}`,
+      fileName: `${params.id}.${format.toLowerCase()}`,
       count: rows.length,
       columns,
       rows,
@@ -603,7 +632,11 @@ export const handlers = [
     await latency();
     const url = new URL(request.url);
     const p = parseListParams(url);
-    const result = listPipeline<Invoice>(db.invoices, {
+    // Optional period filter (parameter dialog): issue date within from/to.
+    const from = url.searchParams.get("from");
+    const to = url.searchParams.get("to");
+    const source = db.invoices.filter((i) => inRange(i.issuedAt, from, to));
+    const result = listPipeline<Invoice>(source, {
       q: p.q,
       searchFields: ["number", "period"],
       filters: { status: url.searchParams.get("status"), entityId: url.searchParams.get("entityId") },
@@ -839,6 +872,10 @@ export const handlers = [
       slug,
       logoDataUrl: body.logoDataUrl || undefined,
       accentColor: body.accentColor ?? "#1B5FAA",
+      designTemplate: body.designTemplate ?? "signage",
+      portalName: body.portalName || undefined,
+      tagline: body.tagline || undefined,
+      welcomeText: body.welcomeText || undefined,
       package: pkg,
       features: body.features ?? PACKAGE_FEATURES[pkg],
       status: body.status ?? "active",
@@ -862,6 +899,10 @@ export const handlers = [
     if (body.slug !== undefined) p.slug = body.slug;
     if (body.logoDataUrl !== undefined) p.logoDataUrl = body.logoDataUrl || undefined;
     if (body.accentColor !== undefined) p.accentColor = body.accentColor;
+    if (body.designTemplate !== undefined) p.designTemplate = body.designTemplate;
+    if (body.portalName !== undefined) p.portalName = body.portalName || undefined;
+    if (body.tagline !== undefined) p.tagline = body.tagline || undefined;
+    if (body.welcomeText !== undefined) p.welcomeText = body.welcomeText || undefined;
     if (body.package !== undefined) p.package = body.package;
     if (body.features !== undefined) p.features = body.features;
     if (body.status !== undefined) p.status = body.status;

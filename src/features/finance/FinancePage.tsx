@@ -7,6 +7,8 @@ import {
   CreditCard,
   MessageSquareWarning,
   Download,
+  CalendarRange,
+  X,
 } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable, type Column } from "@/components/common/DataTable";
@@ -98,7 +100,17 @@ export default function FinancePage() {
   const [status, setStatus] = React.useState("all");
   const [page, setPage] = React.useState(1);
   const [sort, setSort] = React.useState("-issuedAt");
-  const { data, isLoading } = useInvoices({ status, page, pageSize: 10, sort });
+  // Optional period filter (issue date within from/to) — applied server-side.
+  const [period, setPeriod] = React.useState<DateRangeValue | null>(null);
+  const [periodOpen, setPeriodOpen] = React.useState(false);
+  const { data, isLoading } = useInvoices({
+    status,
+    page,
+    pageSize: 10,
+    sort,
+    from: period?.from,
+    to: period?.to,
+  });
   const { data: byCountry } = useSpendByCountry();
   const action = useInvoiceAction();
   const [stmtOpen, setStmtOpen] = React.useState(false);
@@ -234,7 +246,7 @@ export default function FinancePage() {
         onSortChange={setSort}
         emptyTitle="No invoices"
         toolbar={
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             <FilterSelect
               value={status}
               onChange={(v) => { setStatus(v); setPage(1); }}
@@ -246,6 +258,23 @@ export default function FinancePage() {
                 { value: "disputed", label: "Disputed" },
               ]}
             />
+            <Button variant="outline" size="sm" onClick={() => setPeriodOpen(true)}>
+              <CalendarRange className="size-4" /> Period
+            </Button>
+            {period && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-2.5 py-1 text-xs font-medium text-accent-foreground">
+                <CalendarRange className="size-3" />
+                {formatDate(period.from)} – {formatDate(period.to)}
+                <button
+                  type="button"
+                  aria-label="Clear period filter"
+                  onClick={() => { setPeriod(null); setPage(1); }}
+                  className="rounded-full p-0.5 transition-colors hover:bg-foreground/10"
+                >
+                  <X className="size-3" />
+                </button>
+              </span>
+            )}
           </div>
         }
       />
@@ -258,6 +287,21 @@ export default function FinancePage() {
         confirmLabel="Generate statement"
         confirmIcon={<Download className="size-4" />}
         onConfirm={generateStatement}
+      />
+
+      <DateRangeDialog
+        open={periodOpen}
+        onOpenChange={setPeriodOpen}
+        title="Filter by period"
+        description="Show only invoices issued within this date range."
+        confirmLabel="Apply filter"
+        confirmIcon={<CalendarRange className="size-4" />}
+        defaultRange={period ?? undefined}
+        onConfirm={(range) => {
+          setPeriod(range);
+          setPage(1);
+          setPeriodOpen(false);
+        }}
       />
     </div>
   );

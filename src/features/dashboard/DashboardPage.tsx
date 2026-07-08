@@ -39,9 +39,15 @@ import {
 } from "@/hooks/api";
 import { CHART, STATUS_COLORS } from "@/lib/chart";
 import { formatCurrency, formatDate, formatNumber } from "@/lib/utils";
+import { templateOf, portalNameOf, featureEnabled } from "@/lib/brand";
+import { useAppStore } from "@/app/store";
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { activeBrand } = useAppStore();
+  // Charts follow the partner accent; MSTS keeps the Shell palette.
+  const chartPrimary = activeBrand?.accentColor ?? CHART.primary;
+  const chartBar = activeBrand ? activeBrand.accentColor : CHART.ink;
   const { data: summary, isLoading } = useDashboardSummary();
   const { data: trend } = useSpendTrend();
   const { data: byCountry } = useSpendByCountry();
@@ -56,7 +62,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Signage hero */}
       <SignageHero
-        eyebrow="MSTS One · Unified control"
+        eyebrow={activeBrand ? portalNameOf(activeBrand) : "MSTS One · Unified control"}
         title={
           <>
             One fleet. Every road.
@@ -64,20 +70,23 @@ export default function DashboardPage() {
             One screen.
           </>
         }
+        lede={activeBrand ? activeBrand.welcomeText ?? activeBrand.tagline : undefined}
         actions={
-          <>
-            <Button variant="dark" onClick={() => navigate("/vehicles?rc=1")}>
-              <FileUp /> Extract RC card
-            </Button>
-            <Button variant="default" onClick={() => navigate("/vehicles?new=1")}>
-              <Plus /> Add vehicle
-            </Button>
-          </>
+          featureEnabled(activeBrand, "vehicles") ? (
+            <>
+              <Button variant="dark" onClick={() => navigate("/vehicles?rc=1")}>
+                <FileUp /> Extract RC card
+              </Button>
+              <Button variant="default" onClick={() => navigate("/vehicles?new=1")}>
+                <Plus /> Add vehicle
+              </Button>
+            </>
+          ) : undefined
         }
       />
 
       {/* Ticker */}
-      {domains && domains.length > 0 && (
+      {templateOf(activeBrand) === "signage" && domains && domains.length > 0 && (
         <Ticker
           className="rounded-xl"
           signs={domains.map((d) => ({
@@ -133,8 +142,8 @@ export default function DashboardPage() {
               <AreaChart data={trend ?? []} margin={{ left: -18, right: 8, top: 4 }}>
                 <defs>
                   <linearGradient id="spend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART.primary} stopOpacity={0.3} />
-                    <stop offset="100%" stopColor={CHART.primary} stopOpacity={0} />
+                    <stop offset="0%" stopColor={chartPrimary} stopOpacity={0.3} />
+                    <stop offset="100%" stopColor={chartPrimary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="month" tickLine={false} axisLine={false} className="font-mono text-xs" />
@@ -148,7 +157,7 @@ export default function DashboardPage() {
                   formatter={(v: number) => [formatCurrency(v), "Spend"]}
                   contentStyle={tooltipStyle}
                 />
-                <Area type="monotone" dataKey="spend" stroke={CHART.primary} strokeWidth={2.5} fill="url(#spend)" />
+                <Area type="monotone" dataKey="spend" stroke={chartPrimary} strokeWidth={2.5} fill="url(#spend)" />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -195,7 +204,7 @@ export default function DashboardPage() {
                 <XAxis dataKey="country" tickLine={false} axisLine={false} className="font-mono text-xs" />
                 <YAxis tickLine={false} axisLine={false} className="font-mono text-xs" tickFormatter={(v) => `€${(v / 1000).toFixed(0)}k`} />
                 <RTooltip formatter={(v: number) => [formatCurrency(v), "Spend"]} contentStyle={tooltipStyle} cursor={{ fill: "hsl(var(--secondary))" }} />
-                <Bar dataKey="spend" radius={[6, 6, 0, 0]} fill={CHART.ink} maxBarSize={44} />
+                <Bar dataKey="spend" radius={[6, 6, 0, 0]} fill={chartBar} maxBarSize={44} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

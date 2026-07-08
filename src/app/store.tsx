@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Entity, Partner } from "@/lib/types";
 import type { PortalId } from "./portals";
-import { applyBrandVars } from "@/lib/brand";
+import { applyBrandVars, templateOf } from "@/lib/brand";
 
 export interface AuthUser {
   name: string;
@@ -32,6 +32,9 @@ interface AppState {
   /** Active whitelabel partner brand; null = MSTS default. */
   activeBrand: Partner | null;
   setActiveBrand: (b: Partner | null) => void;
+  /** Sign-in destination: true = Partner Solution Studio, false = portal. */
+  studioIntent: boolean;
+  setStudioIntent: (v: boolean) => void;
 }
 
 const AppContext = React.createContext<AppState | null>(null);
@@ -50,6 +53,15 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const [commandOpen, setCommandOpen] = React.useState(false);
+
+  // Whitelabel: not persisted — like auth, every load starts as MSTS
+  // until the login flow resolves a partner from the URL.
+  const [activeBrand, setActiveBrand] = React.useState<Partner | null>(null);
+
+  // MSTS-internal: the login screen can target the Partner Solution Studio
+  // instead of the customer portal. Session-only, reset at sign-out.
+  const [studioIntent, setStudioIntent] = React.useState(false);
+
   const [theme, setTheme] = React.useState<"light" | "dark">(() => {
     const saved =
       typeof window !== "undefined" ? localStorage.getItem(THEME_KEY) : null;
@@ -65,15 +77,28 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
-    localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
+    // A carbon-template partner session must not overwrite the user's
+    // persisted preference — carbon's dark-first is session-scoped.
+    if (!(activeBrand && templateOf(activeBrand) === "carbon")) {
+      localStorage.setItem(THEME_KEY, theme);
+    }
+  }, [theme, activeBrand]);
 
-  // Whitelabel: not persisted — like auth, every load starts as MSTS
-  // until the login flow resolves a partner from the URL.
-  const [activeBrand, setActiveBrand] = React.useState<Partner | null>(null);
+  const preCarbonTheme = React.useRef<"light" | "dark" | null>(null);
 
   React.useEffect(() => {
     applyBrandVars(activeBrand);
+    // Carbon is dark-first: entering a carbon-branded session defaults to
+    // dark; leaving it restores the previous preference. Session-scoped —
+    // the persisted preference is never overwritten by this.
+    if (activeBrand && templateOf(activeBrand) === "carbon") {
+      if (preCarbonTheme.current === null) preCarbonTheme.current = theme;
+      setTheme("dark");
+    } else if (preCarbonTheme.current !== null) {
+      setTheme(preCarbonTheme.current);
+      preCarbonTheme.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeBrand]);
 
   // Global ⌘K / Ctrl+K to open the command palette.
@@ -109,6 +134,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setMfaVerified(false);
       setActivePortal(null);
+      setStudioIntent(false);
     },
     entity,
     setEntity,
@@ -122,6 +148,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
     activeBrand,
     setActiveBrand,
+    studioIntent,
+    setStudioIntent,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

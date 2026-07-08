@@ -141,7 +141,7 @@ without re-login; **⌘K** is scoped to the active portal.
 | **Onboarding** | Guided self-registration + VAT validation → creates an entity | Toll 2.0 |
 | **Support** | Help center, guides, manuals, ticket submission | all (General) |
 | **Account** | Entity/profile/security/preferences + reset demo data | all (General) |
-| **Whitelabel Partners** | Partner branding, packages/feature flags, tenant assignment | MyTolls (MSTS brand only) |
+| **Whitelabel Partners** | Partner branding, packages/feature flags, tenant assignment | Solution Studio (`/studio`, standalone — entered from the login screen, outside all portals) |
 
 ---
 
@@ -160,9 +160,10 @@ without re-login; **⌘K** is scoped to the active portal.
   not scoped.
 
 - **Persistence:** entire mock DB serialized to `localStorage` under `msts-db`
-  with a schema **version** (currently **v5** — added the partners collection
-  for whitelabeling, up from v4). Bumping the version auto-reseeds. Every
-  mutation calls `persist()`. **Reset demo data** reseeds from scratch.
+  with a schema **version** (currently **v6** — added `designTemplate`,
+  `portalName`, `tagline`, `welcomeText` to partners for the generic Solution
+  Builder, up from v5). Bumping the version auto-reseeds. Every mutation calls
+  `persist()`. **Reset demo data** reseeds from scratch.
 
 - **RC-card AI extraction (real):** Vehicles → *Extract RC card* → uploads the
   image to `server/index.js`, which calls Azure OpenAI **GPT-4o vision** and
@@ -195,19 +196,51 @@ without re-login; **⌘K** is scoped to the active portal.
 - **Command palette (⌘K), notifications (mark-all-read), activity feed,
   responsive layout, light/dark themes** — all wired to real state.
 
-- **Whitelabeling (partners):** brand entry via `/login?partner=<slug>` (or the
-  login page's domain-simulator dropdown), driving a **CSS-variable brand
-  layer** (`--brand-accent` etc., see `lib/brand.ts`) that recolors the login,
-  sidebar, dashboard tiles, and exports. Each partner has a **package**
-  (Basic/Enterprise) whose feature flags gate sidebar entries, ⌘K results,
-  direct routes (blocked routes render an `UpgradeState` card), and the MyMST
-  portal switcher. **Tenant isolation** is enforced via each partner's
-  `entityIds` — the entity selector and all scoped data only ever show the
-  partner's own entities. Branded PDF/CSV exports are gated behind the
-  `branded-invoicing` feature flag. Admin CRUD lives at **/partners** (list +
-  3-tab editor: branding/package/entities, with preview, suspend, delete).
-  The mock DB schema is now **v5** (adds the partners collection + entity
-  ownership); bumping from v4 auto-reseeds.
+- **Whitelabeling (partners) — generic Solution Builder:** brand entry via
+  `/login?partner=<slug>` (or the login page's domain-simulator dropdown),
+  driving a **CSS-variable brand layer** (`--brand-accent`, `--primary`, etc.,
+  see `lib/brand.ts`) that recolors the login, sidebar, dashboard tiles, and
+  exports — the partner's `accentColor` drives `--primary` directly (buttons,
+  links, focus rings), replacing Shell red. Partners get a **fully generic
+  portal** (`navForBrand()` in `app/nav.ts`): no MyTolls/MyMST/Toll2.0
+  structure, generic module names (Devices, Carriers, Toll Products, Toll
+  Coverage, Invoices, Customer Onboarding) grouped as Overview/Fleet/Tolling
+  /Billing/Administration/General, no portal switcher, and `SourceTag` chips
+  hidden (MSTS-only affordance). Portal copy surfaces the partner's own
+  strings: sidebar chip = `portalName`, a tagline bar = `tagline`, login
+  subtitle + dashboard hero lede = `welcomeText`.
+  Three **design templates** apply via a `data-theme` attribute + token
+  blocks in `globals.css`: **Signage** (default, MSTS's own look — warm
+  paper/asphalt), **Executive** (clean corporate SaaS, light), and **Carbon**
+  (dark tech console, **dark-first** — sets `dark` automatically for the
+  session, scoped to that login only, not a sticky global preference).
+  Each partner has a **package** (Basic/Professional/Enterprise) whose
+  feature flags gate sidebar entries, ⌘K results, and direct routes (blocked
+  routes render an `UpgradeState` card); empty nav groups are omitted
+  entirely rather than shown disabled. **Tenant isolation** is enforced via
+  each partner's `entityIds`. Branded PDF/CSV exports are gated behind the
+  `branded-invoicing` feature flag.
+  Admin CRUD lives in the standalone **Partner Solution Studio** at
+  `/studio` — deliberately OUTSIDE the customer portal product (no portal
+  nav entry). Entry: the "Partner Solution Studio →" link on the MSTS login
+  card (sign-in + MFA then land in the studio), or the profile-menu
+  "Solution Studio" item from an MSTS portal session. The studio has its own
+  minimal shell (slim asphalt top bar, no sidebar/entity scope) containing
+  the partners list plus the 4-step **Solution Builder wizard** at
+  `/studio/new` and `/studio/:id/edit` (Company & Brand → Package &
+  Features → Design → Review & Launch, with a live preview rail), replacing
+  the old 3-tab editor sheet. Three `/api/ai/*` assists wire into the wizard — **brand-from-logo**
+  (step 1, suggests accent + template from an uploaded logo), **recommend-
+  solution** (step 2, suggests a package + module set from a free-text
+  business description), and **portal-copy** (step 3, drafts
+  portalName/tagline/welcomeText) — all hitting real **Azure OpenAI GPT-4o**
+  when `.env` keys are set (confirmed live during this build: GPT-4o badges
+  on all three calls) with a realistic mock fallback otherwise.
+  The mock DB schema is now **v6** (adds `designTemplate`, `portalName`,
+  `tagline`, `welcomeText` to partners); bumping from v5 auto-reseeds. Seeds:
+  **Alpine Fleet Services** (`alpine`, green `#2F7D4F`, Executive template,
+  Enterprise package, entities e1+e2) and **Nordkap Logistik** (`nordkap`,
+  blue `#1B5FAA`, Carbon template, Basic package, entity e3).
 
 ---
 

@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "./AppLayout";
+import { StudioLayout } from "./StudioLayout";
 import { useAppStore } from "./store";
 import { PORTALS } from "./portals";
 import LoginPage from "@/features/auth/LoginPage";
@@ -16,10 +17,13 @@ import FinancePage from "@/features/finance/FinancePage";
 import UsersPage from "@/features/users/UsersPage";
 import OnboardingPage from "@/features/onboarding/OnboardingPage";
 import PartnersPage from "@/features/partners/PartnersPage";
+import SolutionBuilderPage from "@/features/partners/builder/SolutionBuilderPage";
 import SupportPage from "@/features/support/SupportPage";
 import AccountPage from "@/features/account/AccountPage";
 import NotFoundPage from "@/features/misc/NotFoundPage";
 import { FeatureGate } from "@/components/common/FeatureGate";
+import { brandHome } from "./nav";
+import { featureEnabled } from "@/lib/brand";
 
 /** Gate the app shell behind login → MFA → portal selection. */
 function RequireApp() {
@@ -32,11 +36,15 @@ function RequireApp() {
 }
 
 /**
- * The fleet Dashboard is the home of Toll 2.0 and MyTolls. MyMST has no
- * dashboard, so it lands on its first module instead.
+ * Landing route. Partners land on their generic solution (Dashboard when
+ * licensed, else their first module); MSTS lands per portal as before.
  */
 function PortalIndex() {
-  const { activePortal } = useAppStore();
+  const { activePortal, activeBrand } = useAppStore();
+  if (activeBrand) {
+    if (featureEnabled(activeBrand, "dashboard")) return <DashboardPage />;
+    return <Navigate to={brandHome(activeBrand)} replace />;
+  }
   if (activePortal === "MyMST") {
     return <Navigate to={PORTALS.MyMST.home} replace />;
   }
@@ -50,7 +58,7 @@ export const router = createBrowserRouter([
     path: "/",
     element: <RequireApp />,
     children: [
-      { index: true, element: <FeatureGate feature="dashboard" moduleName="Dashboard"><PortalIndex /></FeatureGate> },
+      { index: true, element: <PortalIndex /> },
       { path: "vehicles", element: <FeatureGate feature="vehicles" moduleName="Vehicles"><VehiclesPage /></FeatureGate> },
       { path: "obus", element: <FeatureGate feature="obu" moduleName="OBU & Devices"><ObusPage /></FeatureGate> },
       { path: "hauliers", element: <FeatureGate feature="hauliers" moduleName="Hauliers"><HauliersPage /></FeatureGate> },
@@ -61,9 +69,20 @@ export const router = createBrowserRouter([
       { path: "finance", element: <FeatureGate feature="finance" moduleName="Invoices & AR"><FinancePage /></FeatureGate> },
       { path: "users", element: <FeatureGate feature="users" moduleName="Users & Access"><UsersPage /></FeatureGate> },
       { path: "onboarding", element: <FeatureGate feature="onboarding" moduleName="Onboarding"><OnboardingPage /></FeatureGate> },
-      { path: "partners", element: <PartnersPage /> },
       { path: "support", element: <SupportPage /> },
       { path: "account", element: <AccountPage /> },
+      { path: "*", element: <NotFoundPage /> },
+    ],
+  },
+  // Partner Solution Studio — whitelabel configuration lives OUTSIDE the
+  // customer portal, in its own minimal shell entered from the login screen.
+  {
+    path: "/studio",
+    element: <StudioLayout />,
+    children: [
+      { index: true, element: <PartnersPage /> },
+      { path: "new", element: <SolutionBuilderPage /> },
+      { path: ":partnerId/edit", element: <SolutionBuilderPage /> },
       { path: "*", element: <NotFoundPage /> },
     ],
   },

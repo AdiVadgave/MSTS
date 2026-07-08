@@ -61,7 +61,9 @@ export default function ReportsPage() {
   const doRun = async (r: ReportDef, format: string, range: DateRangeValue) => {
     setRunningId(r.id + format);
     try {
-      const res = await run.mutateAsync({ id: r.id, format });
+      // The chosen period is a REAL parameter: the backend bounds the
+      // dataset to it (not just a filename stamp).
+      const res = await run.mutateAsync({ id: r.id, format, from: range.from, to: range.to });
       const base = res.fileName.replace(/\.[^.]+$/, "");
       const stamped = `${base}_${range.from}_to_${range.to}`;
       const period = `${formatDate(range.from)} – ${formatDate(range.to)}`;

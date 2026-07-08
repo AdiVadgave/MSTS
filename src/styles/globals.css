@@ -60,6 +60,16 @@
     --brand-accent: 251 206 7;
     --brand-accent-deep: 240 184 0;
     --brand-on-accent: 26 23 18;
+
+    /* Template-controlled typography + motif layer (Signage defaults). */
+    --font-display: "Archivo", ui-sans-serif, system-ui, sans-serif;
+    --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --motif-dash: repeating-linear-gradient(
+      90deg,
+      rgb(var(--brand-accent)) 0 44px,
+      transparent 44px 84px
+    );
   }
 
   .dark {
@@ -95,6 +105,98 @@
     --sidebar-border: 34 18% 14%;
   }
 
+  /* ── Design template: Executive (clean corporate SaaS) ──────── */
+  [data-theme="executive"] {
+    --background: 220 20% 97%;
+    --foreground: 222 28% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 28% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 28% 12%;
+    --secondary: 220 16% 93%;
+    --secondary-foreground: 222 20% 20%;
+    --muted: 220 16% 93%;
+    --muted-foreground: 220 10% 44%;
+    --accent: 220 60% 94%;
+    --accent-foreground: 222 40% 20%;
+    --border: 220 14% 88%;
+    --input: 220 14% 88%;
+    --radius: 0.9rem;
+    --sidebar: 222 26% 16%;
+    --sidebar-foreground: 220 16% 82%;
+    --sidebar-muted: 220 10% 55%;
+    --sidebar-border: 222 20% 24%;
+    --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --motif-dash: linear-gradient(90deg, hsl(220 14% 88%) 0 100%);
+  }
+  .dark[data-theme="executive"] {
+    --background: 222 24% 10%;
+    --foreground: 220 20% 92%;
+    --card: 222 22% 14%;
+    --card-foreground: 220 20% 92%;
+    --popover: 222 22% 14%;
+    --popover-foreground: 220 20% 92%;
+    --secondary: 222 18% 18%;
+    --secondary-foreground: 220 18% 86%;
+    --muted: 222 18% 18%;
+    --muted-foreground: 220 10% 62%;
+    --accent: 222 30% 20%;
+    --accent-foreground: 220 40% 85%;
+    --border: 222 16% 20%;
+    --input: 222 16% 22%;
+    --sidebar: 222 30% 8%;
+    --sidebar-foreground: 220 16% 78%;
+    --sidebar-muted: 220 10% 50%;
+    --sidebar-border: 222 20% 16%;
+    --motif-dash: linear-gradient(90deg, hsl(222 16% 20%) 0 100%);
+  }
+
+  /* ── Design template: Carbon (dark tech console) ────────────── */
+  [data-theme="carbon"] {
+    --background: 210 8% 94%;
+    --foreground: 210 12% 10%;
+    --card: 0 0% 99%;
+    --card-foreground: 210 12% 10%;
+    --popover: 0 0% 99%;
+    --popover-foreground: 210 12% 10%;
+    --secondary: 210 8% 89%;
+    --secondary-foreground: 210 10% 18%;
+    --muted: 210 8% 89%;
+    --muted-foreground: 210 6% 42%;
+    --accent: 210 10% 86%;
+    --accent-foreground: 210 12% 14%;
+    --border: 210 8% 84%;
+    --input: 210 8% 84%;
+    --radius: 0.3rem;
+    --sidebar: 210 10% 6%;
+    --sidebar-foreground: 210 8% 78%;
+    --sidebar-muted: 210 6% 48%;
+    --sidebar-border: 210 8% 14%;
+    --font-display: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --motif-dash: linear-gradient(90deg, rgb(var(--brand-accent)) 0 100%);
+  }
+  .dark[data-theme="carbon"] {
+    --background: 210 8% 6%;
+    --foreground: 210 10% 90%;
+    --card: 210 8% 9%;
+    --card-foreground: 210 10% 90%;
+    --popover: 210 8% 9%;
+    --popover-foreground: 210 10% 90%;
+    --secondary: 210 8% 13%;
+    --secondary-foreground: 210 8% 82%;
+    --muted: 210 8% 13%;
+    --muted-foreground: 210 6% 58%;
+    --accent: 210 10% 15%;
+    --accent-foreground: 210 10% 85%;
+    --border: 210 8% 16%;
+    --input: 210 8% 18%;
+    --sidebar: 210 12% 4%;
+    --sidebar-foreground: 210 8% 75%;
+    --sidebar-muted: 210 6% 45%;
+    --sidebar-border: 210 8% 12%;
+    --motif-dash: linear-gradient(90deg, rgb(var(--brand-accent)) 0 100%);
+  }
+
   * {
     @apply border-border;
   }
@@ -117,7 +219,7 @@
 
   /* Editorial headings — Archivo, tight, heavy */
   h1, h2, h3, .font-display {
-    font-family: "Archivo", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
 

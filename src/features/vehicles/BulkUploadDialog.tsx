@@ -278,7 +278,10 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      {/* Pinned header/footer with a single scrollable body: the dialog
+          never grows past the viewport, so the action buttons stay visible
+          on small screens. */}
+      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-4xl flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSpreadsheet className="size-5 text-primary" /> Bulk load / update vehicles
@@ -289,6 +292,8 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
             flagged in red inline.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
 
         {/* Upload CSV — always visible */}
         <div
@@ -387,9 +392,10 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
           </p>
         )}
 
-        {/* Editable, validated preview */}
+        {/* Editable, validated preview — scrolls with the dialog body;
+            the thead sticks to the top of that scroll area. */}
         {rows.length > 0 && (
-          <div className="max-h-[42vh] overflow-auto rounded-lg border">
+          <div className="overflow-x-auto rounded-lg border">
             <table className="w-full border-collapse text-xs">
               <thead className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
                 <tr>
@@ -440,30 +446,33 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
           </div>
         )}
 
-        {/* Summary */}
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
-            <CheckCircle2 className="size-4" /> {validCount} valid
-          </span>
-          {invalidCount > 0 && (
-            <span className="inline-flex items-center gap-1.5 font-medium text-red-600">
-              <AlertTriangle className="size-4" /> {invalidCount} with errors (skipped)
-            </span>
-          )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={submit} disabled={bulk.isPending || validCount === 0}>
-            {bulk.isPending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Upload className="size-4" />
+        {/* Pinned footer: validation summary + actions always in view */}
+        <DialogFooter className="shrink-0 border-t pt-4 sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700">
+              <CheckCircle2 className="size-4" /> {validCount} valid
+            </span>
+            {invalidCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 font-medium text-red-600">
+                <AlertTriangle className="size-4" /> {invalidCount} with errors (skipped)
+              </span>
             )}
-            Import {validCount} vehicle{validCount === 1 ? "" : "s"}
-          </Button>
+          </div>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={submit} disabled={bulk.isPending || validCount === 0}>
+              {bulk.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Upload className="size-4" />
+              )}
+              Import {validCount} vehicle{validCount === 1 ? "" : "s"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

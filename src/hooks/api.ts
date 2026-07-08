@@ -368,8 +368,18 @@ export interface ReportRun {
 export function useRunReportData() {
   const entityId = useEntityId();
   return useMutation({
-    mutationFn: ({ id, format }: { id: string; format: string }) =>
-      api.post<ReportRun>(`/api/reports/${id}/run`, { format, entityId }),
+    mutationFn: ({
+      id,
+      format,
+      from,
+      to,
+    }: {
+      id: string;
+      format: string;
+      /** Report parameters: bound the dataset to this date range. */
+      from?: string;
+      to?: string;
+    }) => api.post<ReportRun>(`/api/reports/${id}/run`, { format, entityId, from, to }),
   });
 }
 

@@ -47,7 +47,7 @@ export function SignageHero({
           <p
             className={cn(
               "eyebrow",
-              asphalt ? "text-brand-accent" : "text-[#4a3f22]"
+              asphalt ? "text-brand-accent" : "text-brand-on-accent/80"
             )}
           >
             {eyebrow}
@@ -59,7 +59,7 @@ export function SignageHero({
               className={cn(
                 "font-display font-black leading-[0.98] tracking-tight",
                 "text-[clamp(2rem,4vw,3rem)]",
-                asphalt ? "text-shell-paper" : "text-shell-ink"
+                asphalt ? "text-shell-paper" : "text-brand-on-accent"
               )}
             >
               {title}
@@ -68,7 +68,7 @@ export function SignageHero({
               <p
                 className={cn(
                   "mt-3 max-w-2xl text-[1.02rem] font-medium",
-                  asphalt ? "text-[#a79f92]" : "text-[#4a3f22]"
+                  asphalt ? "text-[#a79f92]" : "text-brand-on-accent/80"
                 )}
               >
                 {lede}

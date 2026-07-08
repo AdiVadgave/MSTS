@@ -2,7 +2,7 @@ import * as React from "react";
 import { Command } from "cmdk";
 import { useNavigate } from "react-router-dom";
 import { Search, CornerDownLeft, Plus, FileUp, Upload } from "lucide-react";
-import { navForPortal, NAV } from "./nav";
+import { navForPortal, navForBrand, NAV } from "./nav";
 import { useAppStore } from "./store";
 import { SourceTag } from "@/components/common/SourceTag";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,11 @@ const QUICK_ACTIONS = [
 export function CommandPalette() {
   const { commandOpen, setCommandOpen, activePortal, activeBrand } = useAppStore();
   const navigate = useNavigate();
-  const groups = activePortal ? navForPortal(activePortal, activeBrand) : NAV;
+  const groups = activeBrand
+    ? navForBrand(activeBrand)
+    : activePortal
+      ? navForPortal(activePortal, activeBrand)
+      : NAV;
   // Only surface quick actions whose target module lives in this portal.
   const allowed = new Set(groups.flatMap((g) => g.items.map((i) => i.to)));
   const quickActions = QUICK_ACTIONS.filter((a) =>

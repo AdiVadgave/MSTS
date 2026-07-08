@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
-import { Loader2, LogIn, Mail, Lock, Info, Globe2, ChevronDown, ShieldAlert } from "lucide-react";
+import { Loader2, LogIn, Mail, Lock, Info, Globe2, ChevronDown, ShieldAlert, Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/common/Field";
@@ -25,7 +25,8 @@ export default function LoginPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [params, setParams] = useSearchParams();
-  const { activeBrand, setActiveBrand } = useAppStore();
+  const { activeBrand, setActiveBrand, studioIntent, setStudioIntent } =
+    useAppStore();
   const { data: partners } = usePartners();
   const slug = params.get("partner");
   const activePartners = React.useMemo(
@@ -35,14 +36,22 @@ export default function LoginPage() {
   // A slug that points at a missing/draft/suspended partner = dead domain.
   const unavailable = Boolean(slug && partners && !activePartners.some((p) => p.slug === slug));
 
-  // Resolve the simulated partner domain → active brand.
+  // Resolve the simulated partner domain → active brand. Switching to a
+  // partner domain also cancels a pending Solution Studio destination —
+  // the studio is MSTS-internal.
   React.useEffect(() => {
     if (!partners) return;
-    setActiveBrand(activePartners.find((p) => p.slug === slug) ?? null);
-  }, [partners, activePartners, slug, setActiveBrand]);
+    const brand = activePartners.find((p) => p.slug === slug) ?? null;
+    setActiveBrand(brand);
+    if (brand) setStudioIntent(false);
+  }, [partners, activePartners, slug, setActiveBrand, setStudioIntent]);
 
   // Already signed in → skip ahead.
-  if (user) return <Navigate to={mfaVerified ? "/" : "/mfa"} replace />;
+  if (user) {
+    return (
+      <Navigate to={mfaVerified ? (studioIntent ? "/studio" : "/") : "/mfa"} replace />
+    );
+  }
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +104,7 @@ export default function LoginPage() {
       title="Sign in"
       subtitle={
         activeBrand
-          ? `Access your ${activeBrand.name} tolling account.`
+          ? activeBrand.welcomeText ?? `Access your ${activeBrand.name} tolling account.`
           : "Access your unified MSTS tolling cockpit."
       }
       beforeCard={domainBar}
@@ -161,6 +170,34 @@ export default function LoginPage() {
             {busy ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}
             Sign in
           </Button>
+
+          {/* MSTS-internal: whitelabel configuration lives OUTSIDE the
+              portal product, in its own Solution Studio. */}
+          {!activeBrand &&
+            (studioIntent ? (
+              <div className="flex items-center justify-between rounded-md bg-brand-accent/15 px-3 py-2 text-xs font-medium text-shell-paper ring-1 ring-inset ring-brand-accent/40">
+                <span className="flex items-center gap-1.5">
+                  <Palette className="size-3.5" />
+                  Signing in to the Partner Solution Studio
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setStudioIntent(false)}
+                  className="font-semibold underline-offset-2 hover:underline"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setStudioIntent(true)}
+                className="flex w-full items-center justify-center gap-1.5 text-center text-xs font-medium text-[#9a9184] underline-offset-4 hover:text-shell-paper hover:underline"
+              >
+                <Palette className="size-3.5" />
+                Partner Solution Studio →
+              </button>
+            ))}
         </form>
       )}
     </AuthShell>

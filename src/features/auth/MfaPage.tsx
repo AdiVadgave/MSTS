@@ -11,7 +11,9 @@ const LEN = 6;
 
 export default function MfaPage() {
   const navigate = useNavigate();
-  const { user, mfaVerified, verifyMfa } = useAppStore();
+  const { user, mfaVerified, verifyMfa, studioIntent } = useAppStore();
+  // MSTS staff can target the Partner Solution Studio from the login screen.
+  const destination = studioIntent ? "/studio" : "/";
   // Pre-filled with the demo code so the prototype flow is one click.
   const [digits, setDigits] = React.useState<string[]>(
     Array.from({ length: LEN }, (_, i) => DEMO.mfaCode[i] ?? "")
@@ -22,7 +24,7 @@ export default function MfaPage() {
 
   // Guard: must have completed step 1; don't repeat if already verified.
   if (!user) return <Navigate to="/login" replace />;
-  if (mfaVerified) return <Navigate to="/" replace />;
+  if (mfaVerified) return <Navigate to={destination} replace />;
 
   const code = digits.join("");
 
@@ -66,7 +68,7 @@ export default function MfaPage() {
     setBusy(true);
     window.setTimeout(() => {
       verifyMfa();
-      navigate("/");
+      navigate(destination);
     }, 550);
   };
 
