@@ -35,6 +35,9 @@ interface AppState {
   /** Sign-in destination: true = Partner Solution Studio, false = portal. */
   studioIntent: boolean;
   setStudioIntent: (v: boolean) => void;
+  /** MSTS Tolls One replica: identical app, Classic (blue) color theme only. */
+  classicReplica: boolean;
+  setClassicReplica: (v: boolean) => void;
 }
 
 const AppContext = React.createContext<AppState | null>(null);
@@ -62,6 +65,10 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   // instead of the customer portal. Session-only, reset at sign-out.
   const [studioIntent, setStudioIntent] = React.useState(false);
 
+  // "MSTS Tolls One — Classic": the SAME application (activeBrand stays null, so
+  // nav/data/behavior are identical) with only the color theme swapped.
+  const [classicReplica, setClassicReplica] = React.useState(false);
+
   const [theme, setTheme] = React.useState<"light" | "dark">(() => {
     const saved =
       typeof window !== "undefined" ? localStorage.getItem(THEME_KEY) : null;
@@ -88,6 +95,11 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     applyBrandVars(activeBrand);
+    // Classic replica: only when NO partner brand is active (a brand's own
+    // template always wins), re-skin via the `classic` token block.
+    if (!activeBrand && classicReplica) {
+      document.documentElement.setAttribute("data-theme", "classic");
+    }
     // Carbon is dark-first: entering a carbon-branded session defaults to
     // dark; leaving it restores the previous preference. Session-scoped —
     // the persisted preference is never overwritten by this.
@@ -99,7 +111,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       preCarbonTheme.current = null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeBrand]);
+  }, [activeBrand, classicReplica]);
 
   // Global ⌘K / Ctrl+K to open the command palette.
   React.useEffect(() => {
@@ -135,6 +147,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       setMfaVerified(false);
       setActivePortal(null);
       setStudioIntent(false);
+      // classicReplica intentionally survives sign-out: like a partner
+      // brand, the replica session returns to ITS login screen.
     },
     entity,
     setEntity,
@@ -150,6 +164,8 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     setActiveBrand,
     studioIntent,
     setStudioIntent,
+    classicReplica,
+    setClassicReplica,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -26,7 +26,9 @@ export function SignageHero({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border",
+        // `signage-hero`: theming hook — Classic outlines the (white)
+        // accent field so it separates from the light page background.
+        "signage-hero relative overflow-hidden rounded-2xl border",
         asphalt
           ? "border-shell-asphalt-line bg-shell-asphalt text-shell-paper"
           : "border-brand-accent-deep/40 bg-brand-accent text-brand-on-accent",

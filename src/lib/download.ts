@@ -25,7 +25,7 @@ function pdfLogo(
  *   logo top-left (logos are designed for light grounds), title in ink.
  * - Partner without a raster logo → asphalt band with the partner name
  *   in its accent color.
- * - No brand (MSTS default) → asphalt band, "MSTS One" in Shell yellow.
+ * - No brand (MSTS default) → asphalt band, "MSTS Tolls One" in Shell yellow.
  * All variants end with a 1.5pt accent rule under the band.
  */
 function drawPdfHeader(
@@ -66,7 +66,7 @@ function drawPdfHeader(
   doc.setTextColor(...accent);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(big ? 16 : 14);
-  doc.text(brand ? brand.name : "MSTS One", margin, baseline);
+  doc.text(brand ? brand.name : "MSTS Tolls One", margin, baseline);
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(big ? 11 : 10);
   doc.text(title, pageW - margin, baseline, { align: "right" });

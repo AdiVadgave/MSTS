@@ -1,4 +1,4 @@
-// ── Shared domain model for MSTS One ──────────────────────────────
+// ── Shared domain model for MSTS Tolls One ──────────────────────────────
 // Consolidates entities across MyTolls, MyMST and Toll2.0.
 
 export type SourcePortal = "MyTolls" | "MyMST" | "Toll2.0";

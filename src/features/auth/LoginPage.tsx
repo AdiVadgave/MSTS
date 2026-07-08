@@ -25,8 +25,13 @@ export default function LoginPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [params, setParams] = useSearchParams();
-  const { activeBrand, setActiveBrand, studioIntent, setStudioIntent } =
-    useAppStore();
+  const {
+    activeBrand,
+    setActiveBrand,
+    studioIntent,
+    setStudioIntent,
+    setClassicReplica,
+  } = useAppStore();
   const { data: partners } = usePartners();
   const slug = params.get("partner");
   const activePartners = React.useMemo(
@@ -45,6 +50,13 @@ export default function LoginPage() {
     setActiveBrand(brand);
     if (brand) setStudioIntent(false);
   }, [partners, activePartners, slug, setActiveBrand, setStudioIntent]);
+
+  // "MSTS Tolls One — Classic" replica: same app, blue theme. URL-driven like the
+  // partner domains, so it follows navigation and survives sign-out.
+  const replica = params.get("replica") === "classic";
+  React.useEffect(() => {
+    setClassicReplica(replica);
+  }, [replica, setClassicReplica]);
 
   // Already signed in → skip ahead.
   if (user) {
@@ -112,7 +124,7 @@ export default function LoginPage() {
         activeBrand ? (
           <>Powered by MSTS Tolls · whitelabel partner portal</>
         ) : (
-          <>Protected by two-factor authentication · MSTS One prototype</>
+          <>Protected by two-factor authentication · MSTS Tolls One prototype</>
         )
       }
     >

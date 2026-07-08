@@ -24,10 +24,11 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full flex-col sidebar-bg">
-      {/* Brand */}
+      {/* Brand — `sidebar-brand` is a theming hook: Classic gives it a
+          light backing so the blue MSTS wordmark reads on the blue rail. */}
       <div
         className={cn(
-          "flex h-16 items-center gap-2 border-b px-4",
+          "sidebar-brand flex h-16 items-center gap-2 border-b px-4",
           "border-[hsl(var(--sidebar-border))]",
           collapsed && "justify-center px-2"
         )}

@@ -45,6 +45,7 @@ export function Topbar() {
     activePortal,
     selectPortal,
     activeBrand,
+    classicReplica,
   } = useAppStore();
   const navigate = useNavigate();
   const { data: entities } = useEntities();
@@ -277,7 +278,13 @@ export function Topbar() {
               onClick={() => {
                 signOut();
                 toast.success("You've been signed out");
-                navigate(activeBrand ? `/login?partner=${activeBrand.slug}` : "/login");
+                navigate(
+                  activeBrand
+                    ? `/login?partner=${activeBrand.slug}`
+                    : classicReplica
+                      ? "/login?replica=classic"
+                      : "/login"
+                );
               }}
             >
               <LogOut /> Sign out

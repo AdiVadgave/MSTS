@@ -144,6 +144,35 @@ export default function PartnersPage() {
         actions={<Button onClick={openCreate}><Plus /> New solution</Button>}
       />
 
+      {/* Platform replicas — full MSTS Tolls One, alternate color themes only.
+          Not partner tenants: identical navigation, modules and data. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="grid size-10 shrink-0 place-items-center rounded-lg font-display text-xs font-black text-white"
+            style={{ background: "#1E88E5" }}
+          >
+            M1
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold">
+              MSTS Tolls One — Classic{" "}
+              <Badge variant="outline" className="ml-1 align-middle">Replica</Badge>
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              The complete MSTS Tolls One application — every module, portal and workflow —
+              in the classic blue theme. Colors only; nothing else changes.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => window.open("/login?replica=classic", "_blank", "noopener")}
+        >
+          <ExternalLink /> Launch replica
+        </Button>
+      </div>
+
       <DataTable
         columns={columns}
         rows={partners ?? []}

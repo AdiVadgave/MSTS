@@ -197,6 +197,90 @@
     --motif-dash: linear-gradient(90deg, rgb(var(--brand-accent)) 0 100%);
   }
 
+  /* ── Theme: MSTS Tolls One Classic (blue replica) ─────────────────────
+     The full MSTS Tolls One application re-colored to the legacy MyTolls
+     look (vivid blue sidebar, white surfaces, blue actions/links).
+     COLORS ONLY — no font, radius or layout changes. Activated by the
+     Solution Studio's "MSTS Tolls One — Classic" launcher (`?replica=classic`),
+     with activeBrand left null so behavior is byte-identical to MSTS. */
+  [data-theme="classic"] {
+    --background: 210 20% 99%;
+    --foreground: 200 15% 23%;
+    --card: 0 0% 100%;
+    --card-foreground: 200 15% 23%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 15% 23%;
+    --primary: 207 79% 51%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 207 40% 95%;
+    --secondary-foreground: 207 50% 25%;
+    --muted: 210 25% 95%;
+    --muted-foreground: 205 10% 45%;
+    --accent: 207 85% 94%;
+    --accent-foreground: 208 70% 28%;
+    --border: 210 22% 88%;
+    --input: 210 22% 88%;
+    --ring: 207 79% 51%;
+    --sidebar: 207 76% 47%;
+    --sidebar-foreground: 207 90% 94%;
+    --sidebar-muted: 208 70% 82%;
+    --sidebar-border: 208 70% 41%;
+    /* Sidebar active state + "brand" buttons: white highlight on blue. */
+    --brand-accent: 255 255 255;
+    --brand-accent-deep: 227 242 253;
+    --brand-on-accent: 21 101 192;
+    --motif-dash: linear-gradient(90deg, hsl(207 79% 51%) 0 100%);
+  }
+  .dark[data-theme="classic"] {
+    --background: 208 25% 10%;
+    --foreground: 210 20% 90%;
+    --card: 208 22% 14%;
+    --card-foreground: 210 20% 90%;
+    --popover: 208 22% 14%;
+    --popover-foreground: 210 20% 90%;
+    --primary: 207 80% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 208 20% 19%;
+    --secondary-foreground: 210 18% 86%;
+    --muted: 208 20% 19%;
+    --muted-foreground: 208 12% 60%;
+    --accent: 208 30% 22%;
+    --accent-foreground: 207 80% 80%;
+    --border: 208 20% 20%;
+    --input: 208 20% 22%;
+    --ring: 207 80% 56%;
+    --sidebar: 208 45% 16%;
+    --sidebar-foreground: 207 40% 85%;
+    --sidebar-muted: 208 25% 55%;
+    --sidebar-border: 208 40% 22%;
+    --brand-accent: 144 202 249;
+    --brand-accent-deep: 66 165 245;
+    --brand-on-accent: 16 42 67;
+    --motif-dash: linear-gradient(90deg, hsl(207 80% 56%) 0 100%);
+  }
+
+  /* Classic-only contrast refinements (colors only):
+     — the MSTS logo asset draws its wordmark in white (+ #247BFE "tolls"),
+       which washes out on the vivid blue rail: give the brand block a deep
+       navy backing the white wordmark pops on
+     — the hero's white accent field needs a visible outline on the
+       near-white page background. */
+  [data-theme="classic"] .sidebar-brand {
+    background: hsl(208 55% 22%);
+    border-color: hsl(208 55% 18%);
+  }
+  [data-theme="classic"] .signage-hero {
+    border-color: hsl(207 79% 51% / 0.35);
+    box-shadow: 0 1px 3px 0 hsl(207 79% 51% / 0.12);
+  }
+  .dark[data-theme="classic"] .sidebar-brand {
+    background: hsl(208 50% 13%);
+    border-color: hsl(208 45% 10%);
+  }
+  .dark[data-theme="classic"] .signage-hero {
+    border-color: hsl(207 80% 56% / 0.45);
+  }
+
   * {
     @apply border-border;
   }

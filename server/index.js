@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// MSTS One — AI proxy server
+// MSTS Tolls One — AI proxy server
 // Holds the Azure OpenAI key server-side and exposes /api/ai/*.
 // The browser never sees the key. If Azure isn't configured, it
 // falls back to a realistic mock so the prototype always works.
@@ -342,7 +342,7 @@ function mockPortalCopy(companyName) {
 
 app.listen(PORT, () => {
   console.log(
-    `\n  ⚡ MSTS One AI proxy on http://localhost:${PORT}` +
+    `\n  ⚡ MSTS Tolls One AI proxy on http://localhost:${PORT}` +
       `\n  Azure OpenAI: ${azureConfigured ? "configured ✓" : "NOT configured — using mock extraction"}\n`
   );
 });

@@ -77,7 +77,7 @@ export default function SupportPage() {
             Countries: p.countries.join(", "),
             "Deposit (EUR)": p.deposit,
           })),
-          "MSTS One — product manual index"
+          "MSTS Tolls One — product manual index"
         );
         toast.success("Manual index downloaded", { description: "msts-one-product-manuals.pdf" });
       },
@@ -86,7 +86,7 @@ export default function SupportPage() {
       key: "feedback",
       icon: MessageSquare,
       title: "Give feedback",
-      desc: "Tell us how we can improve MSTS One.",
+      desc: "Tell us how we can improve MSTS Tolls One.",
       action: () => {
         document.getElementById("support-contact")?.scrollIntoView({ behavior: "smooth" });
         toast.info("Share your feedback below");

@@ -62,7 +62,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Signage hero */}
       <SignageHero
-        eyebrow={activeBrand ? portalNameOf(activeBrand) : "MSTS One · Unified control"}
+        eyebrow={activeBrand ? portalNameOf(activeBrand) : "MSTS Tolls One · Unified control"}
         title={
           <>
             One fleet. Every road.
