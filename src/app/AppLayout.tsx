@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { SidebarContent } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { CommandPalette } from "./CommandPalette";
+import { AnnouncementDialog } from "@/components/common/AnnouncementDialog";
 import { useAppStore } from "./store";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,9 @@ export function AppLayout() {
       </div>
 
       <CommandPalette />
+      {/* Broadcast popup — greets the customer once per announcement
+          right after login, on whatever screen they land on. */}
+      <AnnouncementDialog />
     </div>
   );
 }

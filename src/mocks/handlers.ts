@@ -177,6 +177,16 @@ export const handlers = [
     await latency();
     return HttpResponse.json(db.notifications);
   }),
+  // Broadcast announcements — active ones only, newest first. Shown to
+  // every customer as a landing-screen popup after login.
+  http.get("/api/announcements", async () => {
+    await latency();
+    const rows = db.announcements
+      .filter((a) => a.active)
+      .slice()
+      .sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
+    return HttpResponse.json(rows);
+  }),
   http.post("/api/notifications/read-all", async () => {
     db.notifications.forEach((n) => (n.read = true));
     persist();

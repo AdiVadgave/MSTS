@@ -89,7 +89,13 @@ export default function LoginPage() {
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 font-mono text-xs text-white/80 transition-colors hover:bg-white/10">
             <Globe2 className="size-3.5" />
-            {activeBrand ? `tolls.${activeBrand.slug}.com` : slug && unavailable ? `tolls.${slug}.com` : "portal.mststolls.eu"}
+            {activeBrand
+              ? `tolls.${activeBrand.slug}.com`
+              : slug && unavailable
+                ? `tolls.${slug}.com`
+                : replica
+                  ? "classic.mststolls.eu"
+                  : "portal.mststolls.eu"}
             <ChevronDown className="size-3.5" />
           </button>
         </DropdownMenuTrigger>
@@ -98,6 +104,13 @@ export default function LoginPage() {
           <DropdownMenuItem onClick={() => setParams({})}>
             <span className="font-mono text-xs">portal.mststolls.eu</span>
             <span className="ml-auto text-xs text-muted-foreground">MSTS</span>
+          </DropdownMenuItem>
+          {/* Full-platform replica — same app, Classic blue theme. */}
+          <DropdownMenuItem onClick={() => setParams({ replica: "classic" })}>
+            <span className="font-mono text-xs">classic.mststolls.eu</span>
+            <span className="ml-auto truncate text-xs text-muted-foreground">
+              MSTS Tolls One — Classic
+            </span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {activePartners.map((p) => (

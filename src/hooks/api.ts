@@ -7,6 +7,7 @@ import { api, buildQuery } from "@/lib/api";
 import { useAppStore } from "@/app/store";
 import type {
   ActivityEvent,
+  Announcement,
   Entity,
   Haulier,
   Invoice,
@@ -72,6 +73,9 @@ export const useReports = () =>
 
 export const useNotifications = () =>
   useQuery({ queryKey: ["notifications"], queryFn: () => api.get<NotificationItem[]>("/api/notifications") });
+
+export const useAnnouncements = () =>
+  useQuery({ queryKey: ["announcements"], queryFn: () => api.get<Announcement[]>("/api/announcements") });
 
 export const useMarkNotificationsRead = () => {
   const qc = useQueryClient();

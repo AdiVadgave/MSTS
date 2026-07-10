@@ -83,6 +83,9 @@ Legend for statuses: **☐ Pass ☐ Fail — notes**
 | S14 | Mark all read | In popover → **Mark all read** | Unread badge clears; toast; persists on reload | ☐ |
 | S15 | Profile deep links | Avatar → **My account / Company settings** | Opens Account on correct tab (`?tab=profile` / `?tab=entity`) | ☐ |
 | S16 | Responsive nav | Narrow window < 1024px | Sidebar hides; hamburger opens a drawer; search icon opens palette | ☐ |
+| S17 ◈ | Announcement popup | Fresh browser (or clear `msts-announcements-read`), log in to any portal | A **Service announcement** popup appears over the landing screen (seeded: "New toll domain: Denmark") with kind badge + published date; **Got it** (or ESC/overlay) closes it | ☐ |
+| S18 ◈ | Announcement dismissed once | Close the popup, sign out, log back in (and hard-refresh) | The popup does NOT reappear (dismissal stored per announcement id in `msts-announcements-read:<context>`); it returns only for a newly published announcement id | ☐ |
+| S19 ◈ | Announcement per application | Dismiss in MSTS, then launch the **Classic replica** and a **partner portal** (e.g. Alpine) in the same browser | The popup appears once in EACH context (msts / classic / per partner slug) — separate audiences track their own read state | ☐ |
 
 ---
 

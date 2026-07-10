@@ -221,6 +221,21 @@ export interface ActivityEvent {
   source: SourcePortal;
 }
 
+/**
+ * Broadcast announcement shown to every customer as a popup on the
+ * landing screen after login (e.g. "new toll domain added"). Dismissals
+ * are remembered per announcement id on the client.
+ */
+export interface Announcement {
+  id: string;
+  title: string;
+  message: string;
+  kind: "info" | "update" | "alert";
+  publishedAt: string;
+  /** Inactive announcements are drafts/expired — never sent to clients. */
+  active: boolean;
+}
+
 export interface ReportDef {
   id: string;
   name: string;

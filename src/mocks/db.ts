@@ -3,6 +3,7 @@ import { PRODUCTS, REPORTS } from "./catalog";
 import { loadDb, saveDb, clearDb } from "./persistence";
 import type {
   ActivityEvent,
+  Announcement,
   Country,
   Entity,
   Haulier,
@@ -55,6 +56,7 @@ export interface DBShape {
   tickets: SupportTicket[];
   scheduledReports: ScheduledReport[];
   partners: Partner[];
+  announcements: Announcement[];
   profile: Profile;
   settings: Settings;
 }
@@ -332,10 +334,27 @@ export function seedData(): DBShape {
     },
   ];
 
+  // Broadcast announcements — popped up once per customer on the landing
+  // screen after login (dismissals are remembered client-side by id).
+  // Copy stays brand-neutral: partner portals see these too.
+  const announcements: Announcement[] = [
+    {
+      id: "ann_dk_domain",
+      title: "New toll domain: Denmark",
+      message:
+        "The Storebælt and Øresund crossings are now part of our coverage. " +
+        "Vehicles with an active EETS on-board unit are enrolled automatically; " +
+        "coverage for any remaining vehicles can be ordered from the product catalogue.",
+      kind: "update",
+      publishedAt: iso(faker.date.recent({ days: 2 })),
+      active: true,
+    },
+  ];
+
   return {
     entities, hauliers, vehicles, obus, domains, transactions,
     invoices, users, orders, notifications, activity,
-    tickets: [], scheduledReports, partners, profile, settings,
+    tickets: [], scheduledReports, partners, announcements, profile, settings,
   };
 }
 
