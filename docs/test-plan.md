@@ -286,6 +286,8 @@ eligibleTypes ⊇ vehicle type**; already-owned = Existing; missing attributes =
 | H2 | Search/filter | Search name; filter status | Narrows | ☐ |
 | H3 | Create validate | **Create haulier**, empty name, submit | Error "Name is required" | ☐ |
 | H4 | Create success | Fill + submit | Toast; appears at top; persists | ☐ |
+| H5 ◈ | Bulk load — clean file | **Bulk load** (or ⌘K → "Bulk upload hauliers") → drop `sample-hauliers.csv` | All 6 rows valid (2 normalised: lowercase country/VAT-with-spaces still pass); columns mapped from loose headers; **Import 6 hauliers** adds them to the list (entity-scoped) and persists | ☐ |
+| H6 ◈ | Bulk load — error file | Drop `sample-hauliers-messy.csv` | "Ignored column: notes"; 2 valid / 8 with errors, each flagged red inline (missing name, VAT without country prefix, unknown/blank country, bad email, bad phone, fleet 0, fleet "twelve"); fixing a cell clears its error live; import takes only valid rows | ☐ |
 
 ---
 

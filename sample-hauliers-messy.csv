@@ -1,0 +1,11 @@
+carrier,btw,cc,mail,tel,trucks,notes
+Van Dijk Transport,NL812345678,NL,ops@vandijk.nl,+31 10 123 4567,42,preferred
+hansen spedition,de 8112 2334 4,de,DISPATCH@HANSEN-SPED.DE,+49 40 555 1212,88,normalised on import
+,NL812999888,NL,missing@name.nl,+31 6 1111 2222,10,no name
+Solo Freight,12345678,NL,solo@freight.nl,+31 6 2222 3333,5,vat missing country prefix
+Nordic Haul,SE556677889,SE,post@nordichaul.se,+46 8 123 456,25,SE not in coverage
+Blank Country,BE0123456789,,info@blankcountry.be,+32 2 345 6789,12,country empty
+Bad Mail Cargo,DE813334455,DE,not-an-email,+49 30 987 6543,30,invalid email
+Phone Problems,FR12345678901,FR,ok@phoneproblems.fr,call-me-maybe,14,invalid phone
+Zero Fleet,PL5279876543,PL,biuro@zerofleet.pl,+48 22 111 2222,0,fleet below minimum
+Word Fleet,CZ87654321,CZ,info@wordfleet.cz,+420 777 888 999,twelve,fleet not a number

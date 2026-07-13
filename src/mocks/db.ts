@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { PRODUCTS, REPORTS } from "./catalog";
+import { PRODUCTS, REPORTS, VAS_SERVICES } from "./catalog";
 import { loadDb, saveDb, clearDb } from "./persistence";
 import type {
   ActivityEvent,
@@ -19,6 +19,7 @@ import type {
   TollDomain,
   Transaction,
   User,
+  VasRequest,
   Vehicle,
 } from "@/lib/types";
 import { PACKAGE_FEATURES } from "@/lib/brand";
@@ -54,6 +55,7 @@ export interface DBShape {
   notifications: NotificationItem[];
   activity: ActivityEvent[];
   tickets: SupportTicket[];
+  vasRequests: VasRequest[];
   scheduledReports: ScheduledReport[];
   partners: Partner[];
   announcements: Announcement[];
@@ -266,6 +268,32 @@ export function seedData(): DBShape {
     source: faker.helpers.arrayElement(["MyTolls", "MyMST", "Toll2.0"]),
   }));
 
+  // Value-added-service requests (route planning, cleaning, parking…).
+  // Fleet-level services (Finance category) carry no vehicle plate.
+  const vasRequests: VasRequest[] = Array.from({ length: 12 }, () => {
+    const svc = faker.helpers.arrayElement(VAS_SERVICES);
+    const v = faker.helpers.arrayElement(vehicles);
+    const requested = faker.date.recent({ days: 60 });
+    return {
+      id: uid("vas"),
+      entityId: v.entityId,
+      reference: `VAS-${faker.string.numeric(6)}`,
+      serviceCode: svc.code,
+      serviceName: svc.name,
+      vehiclePlate: svc.category === "Finance" ? null : v.plate,
+      notes: "",
+      status: faker.helpers.weightedArrayElement([
+        { value: "requested" as const, weight: 3 },
+        { value: "scheduled" as const, weight: 2 },
+        { value: "in_progress" as const, weight: 1 },
+        { value: "completed" as const, weight: 4 },
+        { value: "cancelled" as const, weight: 1 },
+      ]),
+      requestedAt: iso(requested),
+      updatedAt: iso(faker.date.between({ from: requested, to: new Date() })),
+    };
+  });
+
   const profile: Profile = {
     name: "Lars Jansen",
     email: "lars@nvd-transport.nl",
@@ -354,7 +382,7 @@ export function seedData(): DBShape {
   return {
     entities, hauliers, vehicles, obus, domains, transactions,
     invoices, users, orders, notifications, activity,
-    tickets: [], scheduledReports, partners, announcements, profile, settings,
+    tickets: [], vasRequests, scheduledReports, partners, announcements, profile, settings,
   };
 }
 

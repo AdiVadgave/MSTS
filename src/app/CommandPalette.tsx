@@ -12,6 +12,7 @@ const QUICK_ACTIONS = [
   { label: "Extract RC card (AI)", to: "/vehicles?rc=1", icon: FileUp },
   { label: "Order a product", to: "/products", icon: Plus },
   { label: "Bulk upload vehicles", to: "/vehicles?bulk=1", icon: Upload },
+  { label: "Bulk upload hauliers", to: "/hauliers?bulk=1", icon: Upload },
 ];
 
 export function CommandPalette() {

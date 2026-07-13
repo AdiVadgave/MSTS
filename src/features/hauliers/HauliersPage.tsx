@@ -1,5 +1,6 @@
 import * as React from "react";
-import { Building2, Plus, Mail, Phone, Loader2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Building2, Plus, Mail, Phone, Loader2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { DataTable, type Column } from "@/components/common/DataTable";
 import { SearchInput } from "@/components/common/SearchInput";
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Field } from "@/components/common/Field";
 import { useCreateHaulier, useHauliers } from "@/hooks/api";
+import { BulkUploadHauliersDialog } from "./BulkUploadHauliersDialog";
 import { useDebounced } from "@/hooks/useDebounced";
 import { COUNTRIES } from "@/mocks/catalog";
 import { formatNumber } from "@/lib/utils";
@@ -38,6 +40,16 @@ export default function HauliersPage() {
   const [page, setPage] = React.useState(1);
   const [sort, setSort] = React.useState("");
   const [open, setOpen] = React.useState(false);
+  const [bulkOpen, setBulkOpen] = React.useState(false);
+  const [params, setParams] = useSearchParams();
+
+  // ⌘K quick action deep link: /hauliers?bulk=1 opens the bulk dialog.
+  React.useEffect(() => {
+    if (params.get("bulk") === "1") {
+      setBulkOpen(true);
+      setParams({}, { replace: true });
+    }
+  }, [params, setParams]);
 
   const { data, isLoading } = useHauliers({ q: debouncedQ, status, page, pageSize: 10, sort });
 
@@ -80,7 +92,14 @@ export default function HauliersPage() {
         title="Hauliers"
         description="Manage carriers, owners and their fleet & contact details."
         badge={<SourceTag source="MyTolls" />}
-        actions={<Button onClick={() => setOpen(true)}><Plus /> Create haulier</Button>}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => setBulkOpen(true)}>
+              <Upload /> Bulk load
+            </Button>
+            <Button onClick={() => setOpen(true)}><Plus /> Create haulier</Button>
+          </>
+        }
       />
 
       <DataTable
@@ -117,6 +136,7 @@ export default function HauliersPage() {
       />
 
       <CreateHaulierDialog open={open} onOpenChange={setOpen} />
+      <BulkUploadHauliersDialog open={bulkOpen} onOpenChange={setBulkOpen} />
     </div>
   );
 }

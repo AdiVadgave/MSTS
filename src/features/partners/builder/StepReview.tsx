@@ -6,7 +6,7 @@ import type { FeatureFlag } from "@/lib/types";
 import type { StepProps } from "./useBuilderState";
 
 const MODULE_FLAGS: FeatureFlag[] = [
-  "dashboard", "vehicles", "obu", "hauliers", "products", "domains",
+  "dashboard", "vehicles", "obu", "hauliers", "products", "domains", "vas",
   "transactions", "reports", "finance", "users", "onboarding",
 ];
 

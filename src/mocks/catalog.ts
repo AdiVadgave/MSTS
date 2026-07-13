@@ -1,4 +1,4 @@
-import type { TollProduct, ReportDef, Country } from "@/lib/types";
+import type { TollProduct, ReportDef, Country, VasService } from "@/lib/types";
 
 export const COUNTRIES: { code: Country; name: string }[] = [
   { code: "NL", name: "Netherlands" },
@@ -165,6 +165,91 @@ export const PRODUCTS: TollProduct[] = [
     deposit: 0,
     monthlyFee: 0,
     icon: "percent",
+  },
+];
+
+// Value Added Services — fleet services beyond tolling, requested per
+// vehicle (or fleet-wide) rather than ordered like a toll product.
+export const VAS_SERVICES: VasService[] = [
+  {
+    code: "ROUTE_PLANNING",
+    name: "Route Planning",
+    category: "Route",
+    description: "Optimised truck routing with toll-cost forecasts and restriction-aware navigation per trip.",
+    provider: "MSTS Routing",
+    priceFrom: 12,
+    unit: "per month / vehicle",
+    icon: "route",
+  },
+  {
+    code: "TRUCK_CLEANING",
+    name: "Truck Cleaning",
+    category: "Maintenance",
+    description: "Certified truck, trailer & tanker cleaning at partner wash stations across Europe.",
+    provider: "Partner network",
+    priceFrom: 65,
+    unit: "per wash",
+    icon: "droplets",
+  },
+  {
+    code: "SECURE_PARKING",
+    name: "Secure Truck Parking",
+    category: "Safety",
+    description: "Reserve guarded, camera-monitored parking slots along the main freight corridors.",
+    provider: "Partner network",
+    priceFrom: 18,
+    unit: "per night",
+    icon: "square-parking",
+  },
+  {
+    code: "BREAKDOWN_ASSIST",
+    name: "Breakdown Assistance",
+    category: "Safety",
+    description: "24/7 roadside assistance and towing for trucks and trailers, Europe-wide.",
+    provider: "MSTS Assist",
+    priceFrom: 9.5,
+    unit: "per month / vehicle",
+    icon: "life-buoy",
+  },
+  {
+    code: "TYRE_SERVICE",
+    name: "Tyre Service",
+    category: "Maintenance",
+    description: "Fleet tyre inspections, repair and replacement at partner garages on route.",
+    provider: "Partner network",
+    priceFrom: 0,
+    unit: "per intervention",
+    icon: "wrench",
+  },
+  {
+    code: "VAT_REFUND",
+    name: "VAT & Excise Refund",
+    category: "Finance",
+    description: "Reclaim foreign VAT and excise duty on tolls, fuel and services — handled end to end.",
+    provider: "MSTS Financial Services",
+    priceFrom: 0,
+    unit: "% of refund",
+    icon: "percent",
+  },
+  {
+    code: "FERRY_TRAIN",
+    name: "Ferry & Train Booking",
+    category: "Route",
+    description: "Book ferry and rolling-road rail crossings with negotiated fleet discounts.",
+    provider: "MSTS Booking Desk",
+    priceFrom: 0,
+    unit: "per booking",
+    icon: "ship",
+  },
+  {
+    code: "DRIVER_TRAINING",
+    name: "Driver Training",
+    category: "Compliance",
+    description: "Code 95, eco-driving and dangerous-goods trainings at certified centres.",
+    provider: "Partner network",
+    priceFrom: 240,
+    unit: "per driver",
+    icon: "graduation-cap",
   },
 ];
 

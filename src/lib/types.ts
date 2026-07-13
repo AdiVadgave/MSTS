@@ -75,6 +75,44 @@ export interface TollProduct {
   icon: string;
 }
 
+// ── Value Added Services (beyond tolling: route planning, cleaning…) ──
+export type VasCategory = "Route" | "Maintenance" | "Safety" | "Finance" | "Compliance";
+
+export interface VasService {
+  code: string;
+  name: string;
+  category: VasCategory;
+  description: string;
+  /** Service supplier shown on the card (MSTS or partner network). */
+  provider: string;
+  /** Indicative starting price; 0 = quoted per request. */
+  priceFrom: number;
+  /** Pricing unit, e.g. "per wash", "per month / vehicle". */
+  unit: string;
+  icon: string;
+}
+
+export type VasRequestStatus =
+  | "requested"
+  | "scheduled"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export interface VasRequest {
+  id: string;
+  entityId: string;
+  reference: string;
+  serviceCode: string;
+  serviceName: string;
+  /** Fleet-level services (e.g. VAT refund) have no single vehicle. */
+  vehiclePlate: string | null;
+  notes: string;
+  status: VasRequestStatus;
+  requestedAt: string;
+  updatedAt: string;
+}
+
 export type OrderStatus =
   | "draft"
   | "submitted"
@@ -297,6 +335,7 @@ export type FeatureFlag =
   | "hauliers"
   | "products"
   | "domains"
+  | "vas"
   | "transactions"
   | "reports"
   | "finance"

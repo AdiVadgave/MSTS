@@ -22,6 +22,11 @@ const MAP: Record<string, { label: string; variant: Variant; dot: string }> = {
   fulfilled: { label: "Fulfilled", variant: "success", dot: "bg-success" },
   shipped: { label: "Shipped", variant: "success", dot: "bg-success" },
   cancelled: { label: "Cancelled", variant: "muted", dot: "bg-muted-foreground" },
+  // vas requests
+  requested: { label: "Requested", variant: "default", dot: "bg-primary" },
+  scheduled: { label: "Scheduled", variant: "warning", dot: "bg-warning" },
+  in_progress: { label: "In progress", variant: "default", dot: "bg-primary" },
+  completed: { label: "Completed", variant: "success", dot: "bg-success" },
   // domains
   blocked: { label: "Blocked", variant: "destructive", dot: "bg-destructive" },
   // transactions

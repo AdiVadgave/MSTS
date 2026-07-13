@@ -1,6 +1,6 @@
 import { http, HttpResponse, delay } from "msw";
 import { db, persist, resetDb } from "./db";
-import { PRODUCTS, REPORTS } from "./catalog";
+import { PRODUCTS, REPORTS, VAS_SERVICES } from "./catalog";
 import { listPipeline, parseListParams } from "./helpers";
 import { productStatus } from "@/lib/eligibility";
 import type {
@@ -16,6 +16,7 @@ import type {
   Partner,
   PartnerPackage,
   Cadence,
+  VasRequest,
 } from "@/lib/types";
 import { PACKAGE_FEATURES } from "@/lib/brand";
 
@@ -535,6 +536,66 @@ export const handlers = [
     return HttpResponse.json(order, { status: 201 });
   }),
 
+  // ── Value Added Services ─────────────────────────────────────
+  http.get("/api/vas", async () => {
+    await latency();
+    return HttpResponse.json(VAS_SERVICES);
+  }),
+  http.get("/api/vas-requests", async ({ request }) => {
+    await latency();
+    const url = new URL(request.url);
+    const p = parseListParams(url);
+    const result = listPipeline<VasRequest>(db.vasRequests, {
+      q: p.q,
+      searchFields: ["reference", "serviceName", "vehiclePlate"],
+      filters: {
+        entityId: url.searchParams.get("entityId"),
+        status: url.searchParams.get("status"),
+      },
+      sort: p.sort ?? "-requestedAt",
+      page: p.page,
+      pageSize: p.pageSize,
+    });
+    return HttpResponse.json(result);
+  }),
+  http.post("/api/vas-requests", async ({ request }) => {
+    await latency();
+    const body = (await request.json()) as {
+      serviceCode: string;
+      vehiclePlate?: string | null;
+      notes?: string;
+      entityId?: string;
+    };
+    const svc = VAS_SERVICES.find((s) => s.code === body.serviceCode);
+    if (!svc) return HttpResponse.json({ error: "Unknown service" }, { status: 400 });
+    const vehicle = body.vehiclePlate
+      ? db.vehicles.find((v) => v.plate === body.vehiclePlate)
+      : undefined;
+    const req: VasRequest = {
+      id: rid("vas"),
+      entityId: vehicle?.entityId ?? body.entityId ?? db.entities[0].id,
+      reference: `VAS-${Math.floor(100000 + Math.random() * 899999)}`,
+      serviceCode: svc.code,
+      serviceName: svc.name,
+      vehiclePlate: body.vehiclePlate ?? null,
+      notes: body.notes ?? "",
+      status: "requested",
+      requestedAt: now(),
+      updatedAt: now(),
+    };
+    db.vasRequests.unshift(req);
+    db.activity.unshift({
+      id: rid("act"),
+      actor: "lars.jansen",
+      action: "requested service",
+      target: svc.name,
+      time: now(),
+      source: "MyTolls",
+    });
+    persist();
+    return HttpResponse.json(req, { status: 201 });
+  }),
+
   // ── Domains ──────────────────────────────────────────────────
   http.get("/api/domains", async () => {
     await latency();
@@ -635,6 +696,29 @@ export const handlers = [
     db.hauliers.unshift(h);
     persist();
     return HttpResponse.json(h, { status: 201 });
+  }),
+  http.post("/api/hauliers/bulk", async ({ request }) => {
+    await latency();
+    const body = (await request.json()) as { rows: Partial<Haulier>[]; entityId?: string };
+    const entityId = body.entityId ?? db.entities[0].id;
+    const created = (body.rows ?? []).map((r) => {
+      const h: Haulier = {
+        id: rid("hlr"),
+        entityId,
+        name: r.name ?? "New Haulier",
+        vatNumber: r.vatNumber ?? "",
+        country: r.country ?? "NL",
+        contactEmail: r.contactEmail ?? "",
+        contactPhone: r.contactPhone ?? "",
+        fleetSize: r.fleetSize ?? 0,
+        status: "active",
+        createdAt: now(),
+      };
+      db.hauliers.unshift(h);
+      return h;
+    });
+    persist();
+    return HttpResponse.json({ created: created.length });
   }),
 
   // ── Invoices / Finance ───────────────────────────────────────

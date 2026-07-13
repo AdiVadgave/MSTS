@@ -5,6 +5,7 @@ import {
   Building2,
   ShoppingCart,
   Globe2,
+  ConciergeBell,
   Receipt,
   BarChart3,
   Wallet,
@@ -105,6 +106,15 @@ export const NAV: NavGroup[] = [
         keywords: ["toll domain", "assignment", "viapass", "toll collect"],
         description: "Toll domains & assignments",
         feature: "domains",
+      },
+      {
+        label: "Value Added Services",
+        to: "/vas",
+        icon: ConciergeBell,
+        sources: ["MyTolls"],
+        keywords: ["vas", "route planning", "truck cleaning", "parking", "vat refund", "service"],
+        description: "Fleet services beyond tolling",
+        feature: "vas",
       },
     ],
   },
@@ -260,6 +270,7 @@ const BRAND_GROUPS: { label: string; modules: BrandModule[] }[] = [
     modules: [
       { flag: "products", label: "Toll Products", to: "/products", icon: ShoppingCart, keywords: ["order", "vignette", "card"], description: "Order & manage tolling products" },
       { flag: "domains", label: "Toll Coverage", to: "/domains", icon: Globe2, keywords: ["coverage", "scheme", "country"], description: "Toll schemes & coverage" },
+      { flag: "vas", label: "Fleet Services", to: "/vas", icon: ConciergeBell, keywords: ["service", "cleaning", "parking", "route"], description: "Value added fleet services" },
     ],
   },
   {

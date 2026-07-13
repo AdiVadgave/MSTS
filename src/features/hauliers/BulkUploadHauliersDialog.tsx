@@ -18,9 +18,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useBulkVehicles } from "@/hooks/api";
+import { useBulkHauliers } from "@/hooks/api";
 import { parseCsv, type FieldDef } from "@/lib/csv";
-import type { Vehicle } from "@/lib/types";
+import { COUNTRIES } from "@/mocks/catalog";
+import type { Haulier } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -30,35 +31,36 @@ interface Props {
 }
 
 // ── Column schema ────────────────────────────────────────────────────────
-// Each field declares the header aliases it accepts (so the CSV columns can
-// arrive in ANY order, or be named loosely) and a strict validity check.
-// Parsing machinery is shared with the other bulk dialogs (lib/csv.ts).
+// Header aliases keep the columns order-independent and loosely named;
+// every cell is validated and problems are flagged in red inline.
 
-const COUNTRIES = ["NL", "DE", "BE", "FR", "IT", "AT", "PL", "CZ", "HU", "BG", "ES"];
-const TYPES = ["Truck", "Trailer", "Bus", "Van"];
-const EURONORMS = ["EURO 3", "EURO 4", "EURO 5", "EURO 6"];
-
-const normEuronorm = (v: string) => {
-  const digit = v.replace(/[^0-9]/g, "");
-  return digit ? `EURO ${digit}` : v.trim().toUpperCase();
-};
-const normType = (v: string) => {
-  const t = v.trim().toLowerCase();
-  return TYPES.find((x) => x.toLowerCase() === t) ?? v.trim();
-};
+const COUNTRY_CODES: string[] = COUNTRIES.map((c) => c.code);
 
 const FIELDS: FieldDef[] = [
   {
-    key: "plate",
-    label: "Plate",
-    placeholder: "12-ABC-3",
-    aliases: ["plate", "licenseplate", "numberplate", "registration", "reg", "kenteken"],
-    norm: (v) => v.trim().toUpperCase(),
+    key: "name",
+    label: "Haulier",
+    placeholder: "Van Dijk Transport",
+    aliases: ["name", "haulier", "company", "companyname", "carrier"],
+    norm: (v) => v.trim(),
     validate: (v) => {
       const s = v.trim();
-      if (!s) return "Plate is required";
-      if (!/^[A-Z0-9]{1,4}[- ]?[A-Z0-9]{1,4}[- ]?[A-Z0-9]{0,4}$/i.test(s))
-        return "Invalid plate — use 4–12 letters/digits, e.g. 12-ABC-3";
+      if (!s) return "Company name is required";
+      if (s.length < 2) return "Name must be at least 2 characters";
+      return null;
+    },
+  },
+  {
+    key: "vatNumber",
+    label: "VAT number",
+    placeholder: "NL812345678",
+    aliases: ["vat", "vatnumber", "vatno", "vatid", "taxid", "btw"],
+    norm: (v) => v.trim().toUpperCase().replace(/\s+/g, ""),
+    validate: (v) => {
+      const s = v.trim().toUpperCase().replace(/\s+/g, "");
+      if (!s) return "VAT number is required";
+      if (!/^[A-Z]{2}[A-Z0-9.\-]{6,14}$/.test(s))
+        return "VAT must start with a 2-letter country code, e.g. NL812345678";
       return null;
     },
   },
@@ -71,61 +73,50 @@ const FIELDS: FieldDef[] = [
     validate: (v) => {
       const s = v.trim().toUpperCase();
       if (!s) return "Country is required";
-      if (!COUNTRIES.includes(s)) return `Unknown country — use one of ${COUNTRIES.join(", ")}`;
+      if (!COUNTRY_CODES.includes(s))
+        return `Unknown country — use one of ${COUNTRY_CODES.join(", ")}`;
       return null;
     },
   },
   {
-    key: "type",
-    label: "Type",
-    placeholder: "Truck",
-    aliases: ["type", "vehicletype", "category"],
-    norm: normType,
+    key: "contactEmail",
+    label: "Contact email",
+    placeholder: "ops@haulier.eu",
+    aliases: ["email", "contactemail", "mail", "contact"],
+    norm: (v) => v.trim().toLowerCase(),
     validate: (v) => {
-      if (!v.trim()) return "Type is required";
-      if (!TYPES.includes(normType(v))) return `Type must be one of ${TYPES.join(", ")}`;
+      const s = v.trim();
+      if (!s) return "Contact email is required";
+      if (!/^\S+@\S+\.\S+$/.test(s)) return "Enter a valid email address";
       return null;
     },
   },
   {
-    key: "euronorm",
-    label: "Euronorm",
-    placeholder: "EURO 6",
-    aliases: ["euronorm", "euro", "euroclass", "emissionclass", "norm"],
-    norm: normEuronorm,
-    validate: (v) => {
-      if (!v.trim()) return "Euronorm is required";
-      if (!EURONORMS.includes(normEuronorm(v))) return "Euronorm must be EURO 3, 4, 5 or 6";
-      return null;
-    },
-  },
-  {
-    key: "axles",
-    label: "Axles",
-    placeholder: "4",
-    aliases: ["axles", "totalaxles", "numberofaxles", "axlecount"],
+    key: "contactPhone",
+    label: "Phone (optional)",
+    placeholder: "+31 10 123 4567",
+    aliases: ["phone", "contactphone", "tel", "telephone", "mobile"],
     norm: (v) => v.trim(),
     validate: (v) => {
       const s = v.trim();
-      if (!s) return "Axles is required";
-      if (!/^\d+$/.test(s)) return "Axles must be a whole number";
-      const n = Number(s);
-      if (n < 2 || n > 10) return "Axles must be between 2 and 10";
+      if (!s) return null; // optional
+      if (!/^[+0-9][0-9 ()\-./]{5,19}$/.test(s))
+        return "Phone may contain digits, spaces and + ( ) - only";
       return null;
     },
   },
   {
-    key: "weight",
-    label: "Weight (kg)",
-    placeholder: "26000",
-    aliases: ["weight", "totalweight", "totalweightkg", "grossweight", "gvw", "kg"],
+    key: "fleetSize",
+    label: "Fleet size",
+    placeholder: "42",
+    aliases: ["fleetsize", "fleet", "vehicles", "trucks", "size"],
     norm: (v) => v.trim(),
     validate: (v) => {
-      const s = v.trim().replace(/[,\s]/g, "");
-      if (!s) return "Weight is required";
-      if (!/^\d+$/.test(s)) return "Weight must be a number in kilograms";
+      const s = v.trim();
+      if (!s) return "Fleet size is required";
+      if (!/^\d+$/.test(s)) return "Fleet size must be a whole number";
       const n = Number(s);
-      if (n < 1000 || n > 60000) return "Weight must be 1,000–60,000 kg";
+      if (n < 1 || n > 5000) return "Fleet size must be between 1 and 5,000";
       return null;
     },
   },
@@ -133,17 +124,17 @@ const FIELDS: FieldDef[] = [
 
 // Canonical schema. Column order/names are flexible — the parser maps by
 // header — but this mirrors the standard export the team uploads.
-const SAMPLE = `plate,country,type,euronorm,axles,weight
-12-ABC-3,NL,Truck,EURO 6,4,26000
-B XY 4421,DE,Truck,EURO 5,5,40000
-99-KLM-2,NL,Trailer,EURO 6,2,12000`;
+const SAMPLE = `name,vat,country,email,phone,fleetsize
+Van Dijk Transport,NL812345678,NL,ops@vandijk.nl,+31 10 123 4567,42
+Hansen Spedition,DE811223344,DE,dispatch@hansen-sped.de,+49 40 555 1212,88
+Baltique Fret,FR76543210987,FR,contact@baltique-fret.fr,,17`;
 
-export function BulkUploadDialog({ open, onOpenChange }: Props) {
+export function BulkUploadHauliersDialog({ open, onOpenChange }: Props) {
   const [text, setText] = React.useState(SAMPLE);
   const [fileName, setFileName] = React.useState<string | null>(null);
   const [rows, setRows] = React.useState<Record<string, string>[]>([]);
   const fileRef = React.useRef<HTMLInputElement>(null);
-  const bulk = useBulkVehicles();
+  const bulk = useBulkHauliers();
 
   const parsed = React.useMemo(() => parseCsv(text, FIELDS), [text]);
 
@@ -188,17 +179,17 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
       toast.error("No valid rows to import — fix the errors flagged in red.");
       return;
     }
-    const payload: Partial<Vehicle>[] = validRows.map((r) => ({
-      plate: FIELDS[0].norm(r.plate) as Vehicle["plate"],
-      country: r.country.trim().toUpperCase() as Vehicle["country"],
-      type: normType(r.type) as Vehicle["type"],
-      euronorm: normEuronorm(r.euronorm) as Vehicle["euronorm"],
-      totalAxles: Number(r.axles),
-      totalWeightKg: Number(r.weight.replace(/[,\s]/g, "")),
+    const payload: Partial<Haulier>[] = validRows.map((r) => ({
+      name: r.name.trim(),
+      vatNumber: FIELDS[1].norm(r.vatNumber) as Haulier["vatNumber"],
+      country: r.country.trim().toUpperCase() as Haulier["country"],
+      contactEmail: r.contactEmail.trim().toLowerCase(),
+      contactPhone: r.contactPhone.trim(),
+      fleetSize: Number(r.fleetSize),
     }));
     const res = await bulk.mutateAsync(payload);
     toast.success(
-      `${res.created} vehicles queued for onboarding` +
+      `${res.created} hauliers imported` +
         (invalidCount ? ` · ${invalidCount} invalid row${invalidCount === 1 ? "" : "s"} skipped` : "")
     );
     onOpenChange(false);
@@ -206,18 +197,17 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* Pinned header/footer with a single scrollable body: the dialog
-          never grows past the viewport, so the action buttons stay visible
-          on small screens. */}
+      {/* Pinned header/footer with a single scrollable body — same pattern
+          as the vehicles bulk dialog, viewport-safe on small screens. */}
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-4xl flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="size-5 text-primary" /> Bulk load / update vehicles
+            <FileSpreadsheet className="size-5 text-primary" /> Bulk load hauliers
           </DialogTitle>
           <DialogDescription>
-            Upload or paste a CSV. Columns can be in <span className="font-medium">any order</span> and
-            loosely named — the parser maps them by header. Every field is validated; problems are
-            flagged in red inline.
+            Upload or paste a CSV of carrier companies. Columns can be in{" "}
+            <span className="font-medium">any order</span> and loosely named — the parser maps
+            them by header. Every field is validated; problems are flagged in red inline.
           </DialogDescription>
         </DialogHeader>
 
@@ -301,7 +291,7 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
                 title={header ? `Mapped from "${header}"` : "Missing — no matching column"}
               >
                 {f.label}
-                {header && header.toLowerCase() !== f.key ? ` ← ${header}` : ""}
+                {header && header.toLowerCase() !== f.key.toLowerCase() ? ` ← ${header}` : ""}
                 {!header ? " (missing)" : ""}
               </span>
             );
@@ -320,8 +310,7 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
           </p>
         )}
 
-        {/* Editable, validated preview — scrolls with the dialog body;
-            the thead sticks to the top of that scroll area. */}
+        {/* Editable, validated preview — thead sticks to the body scroll */}
         {rows.length > 0 && (
           <div className="overflow-x-auto rounded-lg border">
             <table className="w-full border-collapse text-xs">
@@ -356,7 +345,6 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
                                 err && "border-red-500 focus-visible:ring-red-500"
                               )}
                             />
-                            {/* error flagged in red, right below the box */}
                             {err && (
                               <p className="mt-1 flex items-start gap-1 text-[11px] font-medium leading-tight text-red-600">
                                 <AlertTriangle className="mt-0.5 size-3 shrink-0" />
@@ -398,7 +386,7 @@ export function BulkUploadDialog({ open, onOpenChange }: Props) {
               ) : (
                 <Upload className="size-4" />
               )}
-              Import {validCount} vehicle{validCount === 1 ? "" : "s"}
+              Import {validCount} haulier{validCount === 1 ? "" : "s"}
             </Button>
           </div>
         </DialogFooter>

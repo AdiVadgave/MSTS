@@ -9,7 +9,8 @@ const STORAGE_KEY = "msts-db";
 // v5: added the whitelabel partners collection.
 // v6: partners carry designTemplate + portal copy (solution builder).
 // v7: added the broadcast announcements collection.
-const VERSION = 7;
+// v8: added the value-added-services (VAS) requests collection.
+const VERSION = 8;
 
 interface Envelope<T> {
   __v: number;

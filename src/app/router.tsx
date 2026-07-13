@@ -11,6 +11,7 @@ import ObusPage from "@/features/obus/ObusPage";
 import HauliersPage from "@/features/hauliers/HauliersPage";
 import ProductsPage from "@/features/products/ProductsPage";
 import DomainsPage from "@/features/domains/DomainsPage";
+import VasPage from "@/features/vas/VasPage";
 import TransactionsPage from "@/features/transactions/TransactionsPage";
 import ReportsPage from "@/features/reports/ReportsPage";
 import FinancePage from "@/features/finance/FinancePage";
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
       { path: "hauliers", element: <FeatureGate feature="hauliers" moduleName="Hauliers"><HauliersPage /></FeatureGate> },
       { path: "products", element: <FeatureGate feature="products" moduleName="Products & Ordering"><ProductsPage /></FeatureGate> },
       { path: "domains", element: <FeatureGate feature="domains" moduleName="Domains"><DomainsPage /></FeatureGate> },
+      { path: "vas", element: <FeatureGate feature="vas" moduleName="Value Added Services"><VasPage /></FeatureGate> },
       { path: "transactions", element: <FeatureGate feature="transactions" moduleName="Transactions"><TransactionsPage /></FeatureGate> },
       { path: "reports", element: <FeatureGate feature="reports" moduleName="Reports"><ReportsPage /></FeatureGate> },
       { path: "finance", element: <FeatureGate feature="finance" moduleName="Invoices & AR"><FinancePage /></FeatureGate> },

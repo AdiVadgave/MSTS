@@ -8,7 +8,7 @@ const BASIC: FeatureFlag[] = [
   "dashboard", "vehicles", "obu", "hauliers", "products", "domains",
 ];
 const PROFESSIONAL: FeatureFlag[] = [
-  ...BASIC, "transactions", "reports", "branded-invoicing", "scheduled-reports",
+  ...BASIC, "vas", "transactions", "reports", "branded-invoicing", "scheduled-reports",
 ];
 const ENTERPRISE: FeatureFlag[] = [
   ...PROFESSIONAL, "finance", "users", "onboarding", "api-access",
@@ -27,6 +27,7 @@ export const FEATURE_LABELS: Record<FeatureFlag, string> = {
   hauliers: "Hauliers",
   products: "Products & ordering",
   domains: "Toll domains",
+  vas: "Value added services",
   transactions: "Transactions",
   reports: "Reports & exports",
   finance: "Invoices & AR",

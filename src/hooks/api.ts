@@ -25,6 +25,8 @@ import type {
   TollProduct,
   Transaction,
   User,
+  VasRequest,
+  VasService,
   Vehicle,
 } from "@/lib/types";
 
@@ -241,6 +243,31 @@ export function useCreateOrder() {
   });
 }
 
+// ── Value Added Services ───────────────────────────────────────
+export const useVasServices = () =>
+  useQuery({ queryKey: ["vas"], queryFn: () => api.get<VasService[]>("/api/vas") });
+
+export const useVasRequests = (args: ListArgs) => {
+  const scoped = useScopedArgs(args);
+  return useQuery({
+    queryKey: ["vas-requests", scoped],
+    queryFn: () => api.get<Paginated<VasRequest>>(`/api/vas-requests${buildQuery(scoped)}`),
+  });
+};
+
+export function useCreateVasRequest() {
+  const qc = useQueryClient();
+  const entityId = useEntityId();
+  return useMutation({
+    mutationFn: (body: { serviceCode: string; vehiclePlate?: string | null; notes?: string }) =>
+      api.post<VasRequest>("/api/vas-requests", { ...body, entityId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["vas-requests"] });
+      qc.invalidateQueries({ queryKey: ["activity"] });
+    },
+  });
+}
+
 // ── Domains ────────────────────────────────────────────────────
 export const useDomains = () =>
   useQuery({ queryKey: ["domains"], queryFn: () => api.get<TollDomain[]>("/api/domains") });
@@ -285,6 +312,16 @@ export function useCreateHaulier() {
   const entityId = useEntityId();
   return useMutation({
     mutationFn: (body: Partial<Haulier>) => api.post<Haulier>("/api/hauliers", { ...body, entityId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hauliers"] }),
+  });
+}
+
+export function useBulkHauliers() {
+  const qc = useQueryClient();
+  const entityId = useEntityId();
+  return useMutation({
+    mutationFn: (rows: Partial<Haulier>[]) =>
+      api.post<{ created: number }>("/api/hauliers/bulk", { rows, entityId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["hauliers"] }),
   });
 }
